@@ -12,8 +12,6 @@
 #else
 #include "usf/develop/usf_config.hpp"
 #include "usf/develop/usf_traits.hpp"
-#include "usf/develop/usf_string_span.hpp"
-#include "usf/develop/usf_string_view.hpp"
 #include "usf/develop/usf_integer.hpp"
 #include "usf/develop/usf_float.hpp"
 #include "usf/develop/usf_arg_format.hpp"

@@ -16,6 +16,8 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <span>
+#include <string_view>
 
 // ----------------------------------------------------------------------------
 // usflib configuration options
@@ -132,7 +134,9 @@ with the -std=c++11 or -std=gnu++11 compiler options.
 
 // std::string_view support
 #if USF_CPP17_OR_GREATER && USF_HAS_INCLUDE(<string_view>)
+
 #  include <string_view>
+
 #  define USF_STD_BASIC_STRING_VIEW  std::basic_string_view
 #elif USF_CPP14_OR_GREATER && USF_HAS_INCLUDE(<experimental/string_view>)
 #  include <experimental/string_view>
