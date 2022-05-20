@@ -39,9 +39,9 @@ namespace usf {
 
       //USF_ENFORCE(str_it < str.end(), std::runtime_error);
 
-      str = str.subspan(str_it - str.data());
+      str = str.subspan(static_cast<uint32_t>(str_it - str.data())); // TODO: Sign conversion error
 //    str.remove_prefix();
-      fmt.remove_prefix(fmt_it - fmt.cbegin());
+      fmt.remove_prefix(static_cast<uint32_t>(fmt_it - fmt.cbegin())); // TODO: Sign conversion error
     }
 
 
@@ -132,11 +132,11 @@ namespace usf {
     return basic_format_to(str, fmt, args...);
   }
 
-  template<typename... Args>
-  USF_CPP14_CONSTEXPR
-  char *format_to(char *str, const std::ptrdiff_t str_count, std::string_view fmt, Args &&... args) {
-    return basic_format_to(str, str_count, fmt, args...);
-  }
+//  template<typename... Args>
+//  USF_CPP14_CONSTEXPR
+//  char *format_to(char *str, const std::ptrdiff_t str_count, std::string_view fmt, Args &&... args) {
+//    return basic_format_to(str, str_count, fmt, args...);
+//  }
 
 //// ----------------------------------------------------------------------------
 //// Formats a wchar_t string

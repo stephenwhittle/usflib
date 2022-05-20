@@ -247,7 +247,7 @@ namespace usf::internal {
       // Test for unterminated argument format spec.
       USF_ENFORCE(it < fmt.cend() && *it++ == '}', std::runtime_error);
 
-      fmt.remove_prefix(it - fmt.cbegin());
+      fmt.remove_prefix(static_cast<uint32_t>(it - fmt.cbegin())); // TODO: Resolve sign error better
     }
 
     // Writes the alignment (sign, prefix and fill before) for any

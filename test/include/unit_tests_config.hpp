@@ -1,7 +1,6 @@
 
-#define DOCTEST_CONFIG_TREAT_CHAR_STAR_AS_STRING
-#include "doctest.h"
-
+#include "gtest/gtest.h"
+using namespace std::literals::string_view_literals;
 
 #define USF_THROW_ON_CONTRACT_VIOLATION
 //#define USF_DISABLE_FLOAT_SUPPORT

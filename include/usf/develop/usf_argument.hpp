@@ -102,7 +102,7 @@ namespace usf {
             break;
         }
 
-        dst = dst.subspan(it - dst.begin().base());
+        dst = dst.subspan(static_cast<uint32_t>(it - dst.begin().base())); // TODO: Sign conversion
       }
 
     private:
