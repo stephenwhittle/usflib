@@ -12,7 +12,6 @@
 
 namespace usf
 {
-
 template <typename CharT>
 class BasicStringSpan
 {
@@ -36,7 +35,7 @@ class BasicStringSpan
         // --------------------------------------------------------------------
 
         static_assert(std::is_trivial<CharT>::value && std::is_standard_layout<CharT>::value,
-                      "usf::BasicStringSpan: CharT must be a POD type (both trivial and standard-layout).");
+                      "std::span: CharT must be a POD type (both trivial and standard-layout).");
 
         // --------------------------------------------------------------------
         // PUBLIC MEMBER FUNCTIONS

@@ -65,7 +65,7 @@ class ArgFormat
         // PUBLIC MEMBER FUNCTIONS
         // --------------------------------------------------------------------
 
-        USF_CPP14_CONSTEXPR ArgFormat(usf::BasicStringView<CharT>& fmt, const int arg_count)
+        USF_CPP14_CONSTEXPR ArgFormat(std::basic_string_view<CharT>& fmt, const int arg_count)
         {
             const_iterator it = fmt.cbegin();
 

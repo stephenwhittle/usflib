@@ -34,3 +34,5 @@
 # Ignore everything inside these directories
 /**/.vscode/**
 /**/build/**
+/**/cmake-build-debug/**
+/**/.idea/**

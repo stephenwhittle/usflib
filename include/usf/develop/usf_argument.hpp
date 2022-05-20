@@ -57,34 +57,34 @@ class Argument
         constexpr Argument(const double value) noexcept
             : m_float(value), m_type_id(TypeId::kFloat) {}
 #endif
-        constexpr Argument(const usf::BasicStringView<CharT> value) noexcept
+        constexpr Argument(const std::basic_string_view<CharT> value) noexcept
             : m_string(value), m_type_id(TypeId::kString) {}
 
         constexpr Argument(const ArgCustomType<CharT> value) noexcept
             : m_custom(value), m_type_id(TypeId::kCustom) {}
 
-        USF_CPP14_CONSTEXPR void format(usf::BasicStringSpan<CharT>& dst, Format& format) const
+        USF_CPP14_CONSTEXPR void format(std::span<CharT>& dst, Format& format) const
         {
-            iterator it = dst.begin();
+            iterator it = dst.begin().base();
 
             switch(m_type_id)
             {
-                case TypeId::kBool:    format_bool   (it, dst.end(), format, m_bool   ); break;
-                case TypeId::kChar:    format_char   (it, dst.end(), format, m_char   ); break;
-                case TypeId::kInt32:   format_integer(it, dst.end(), format, m_int32  ); break;
-                case TypeId::kUint32:  format_integer(it, dst.end(), format, m_uint32 ); break;
-                case TypeId::kInt64:   format_integer(it, dst.end(), format, m_int64  ); break;
-                case TypeId::kUint64:  format_integer(it, dst.end(), format, m_uint64 ); break;
-                case TypeId::kPointer: format_pointer(it, dst.end(), format, m_pointer); break;
+                case TypeId::kBool:    format_bool   (it, dst.end().base(), format, m_bool   ); break;
+                case TypeId::kChar:    format_char   (it, dst.end().base(), format, m_char   ); break;
+                case TypeId::kInt32:   format_integer(it, dst.end().base(), format, m_int32  ); break;
+                case TypeId::kUint32:  format_integer(it, dst.end().base(), format, m_uint32 ); break;
+                case TypeId::kInt64:   format_integer(it, dst.end().base(), format, m_int64  ); break;
+                case TypeId::kUint64:  format_integer(it, dst.end().base(), format, m_uint64 ); break;
+                case TypeId::kPointer: format_pointer(it, dst.end().base(), format, m_pointer); break;
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
-                case TypeId::kFloat:   format_float  (it, dst.end(), format, m_float  ); break;
+                case TypeId::kFloat:   format_float  (it, dst.end().base(), format, m_float  ); break;
 #endif
-                case TypeId::kString:  format_string (it, dst.end(), format, m_string ); break;
+                case TypeId::kString:  format_string (it, dst.end().base(), format, m_string ); break;
                 case TypeId::kCustom:  USF_ENFORCE(format.is_empty(), std::runtime_error);
-                                       it = m_custom(dst).end();                         break;
+                                       it = m_custom(dst).end().base();                         break;
             }
 
-            dst.remove_prefix(it - dst.begin());
+            dst = dst.subspan(it - dst.begin().base());
         }
 
     private:
@@ -455,7 +455,7 @@ class Argument
 #endif // !defined(USF_DISABLE_FLOAT_SUPPORT)
 
         static USF_CPP14_CONSTEXPR void format_string(iterator& it, const_iterator end,
-                                                      Format& format, const usf::BasicStringView<CharT>& str)
+                                                      Format& format, const std::basic_string_view<CharT>& str)
         {
             // Test for argument type / format match
             USF_ENFORCE(format.type_is_none() || format.type_is_string(), std::runtime_error);
@@ -515,7 +515,7 @@ class Argument
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
             double                          m_float;
 #endif
-            usf::BasicStringView<CharT>     m_string;
+            std::basic_string_view<CharT>     m_string;
             ArgCustomType<CharT>            m_custom;
         };
 
@@ -664,10 +664,10 @@ Argument<CharT> make_argument(double arg)
 
 // String (convertible to string view)
 template <typename CharT, typename T,
-          typename std::enable_if<std::is_convertible<T, usf::BasicStringView<CharT>>::value, bool>::type = true>
+          typename std::enable_if<std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
 inline USF_CPP14_CONSTEXPR Argument<CharT> make_argument(const T& arg)
 {
-    return usf::BasicStringView<CharT>(arg);
+    return std::basic_string_view<CharT>(arg);
 }
 
 } // namespace internal
@@ -676,7 +676,7 @@ inline USF_CPP14_CONSTEXPR Argument<CharT> make_argument(const T& arg)
 template <typename CharT, typename T>
 struct Formatter
 {
-    static BasicStringSpan<CharT> format_to(BasicStringSpan<CharT>, const T&);
+    static std::basic_string_view<CharT> format_to(std::basic_string_view<CharT>, const T&);
 };
 
 namespace internal
@@ -684,7 +684,7 @@ namespace internal
 
 // User-defined custom type
 template <typename CharT, typename T,
-          typename std::enable_if<!std::is_convertible<T, usf::BasicStringView<CharT>>::value, bool>::type = true>
+          typename std::enable_if<!std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
 inline USF_CPP14_CONSTEXPR Argument<CharT> make_argument(const T& arg)
 {
     using _T = typename std::decay<decltype(arg)>::type;
