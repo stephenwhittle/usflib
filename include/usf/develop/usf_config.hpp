@@ -20,7 +20,7 @@
 #include <string_view>
 #include <charconv>
 
-#define ORIGINAL
+//#define ORIGINAL
 
 // ----------------------------------------------------------------------------
 // usflib configuration options
