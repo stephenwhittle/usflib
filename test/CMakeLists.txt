@@ -1,9 +1,24 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(unit_tests VERSION 1.0.0)
 
+set(CMAKE_CXX_FLAGS_RELEASE        "-O2 -DNDEBUG"   CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG"   CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Og -g -DDEBUG" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g -DDEBUG" CACHE STRING "" FORCE)
+
+file(GLOB_RECURSE user_source "source/*.cpp" "../include/*.hpp" "include/*.hpp")
+
+enable_testing()
+add_executable(unit_tests ${user_source} test_main.cpp)
+#add_test(NAME unit_tests COMMAND unit_tests)
+
+target_include_directories(unit_tests PUBLIC ../include) ## usflib include directory
+target_include_directories(unit_tests PUBLIC include)    ## unit_tests include directory
+target_include_directories(unit_tests PUBLIC googletest/googletest/include)    ## unit_tests include directory
+
 macro(add_compiler_flags)
     foreach(flag ${ARGV})
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
+        target_compile_options(unit_tests PRIVATE ${flag})
     endforeach()
 endmacro()
 
@@ -90,16 +105,6 @@ if(MSVC)
     add_compiler_flags(/WX)
 endif()
 
-set(CMAKE_CXX_FLAGS_RELEASE        "-O2 -DNDEBUG"   CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG"   CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Og -g -DDEBUG" CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g -DDEBUG" CACHE STRING "" FORCE)
-
-include_directories("../include") ## usflib include directory
-include_directories("include")    ## unit_tests include directory
-
-file(GLOB_RECURSE user_source "source/*.cpp" "../include/*.hpp" "include/*.hpp")
-
-enable_testing()
-add_executable(unit_tests ${user_source})
-add_test(NAME unit_tests COMMAND unit_tests)
+add_subdirectory(googletest)
+target_include_directories(unit_tests PUBLIC ${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+target_link_libraries(unit_tests PUBLIC gtest gtest_main)

@@ -11,59 +11,55 @@
 #ifndef USF_TRAITS_HPP
 #define USF_TRAITS_HPP
 
-namespace usf
-{
-namespace internal
-{
+namespace usf::internal {
 
-// ----------------------------------------------------------------------------
-// Custom char traits
-// ----------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
+  // Custom char traits
+  // ----------------------------------------------------------------------------
 
-class CharTraits
-{
-    public:
+  class CharTraits {
+   public:
+    // --------------------------------------------------------------------
+    // PUBLIC STATIC FUNCTIONS
+    // --------------------------------------------------------------------
 
-        // --------------------------------------------------------------------
-        // PUBLIC STATIC FUNCTIONS
-        // --------------------------------------------------------------------
+    /**
+    * @brief Fills in a certain number of fill characters from a starting iterator.
+    * @tparam CharDst The character type of the input string.
+    * @tparam CharSrc The character type of the fill char.
+    * @param dst The string iterator which is the start of where fill characters begin (it will replaced with a fill character).
+    * @param ch The fill character.
+    * @param count The number of sequential fill characters to write.
+    */
+    template <typename CharDst, typename CharSrc, typename std::enable_if<std::is_convertible<CharSrc, CharDst>::value, bool>::type = true>
+    USF_ALWAYS_INLINE static constexpr void assign(CharDst *&dst, CharSrc ch, std::ptrdiff_t count) noexcept {
+      while ((count--) > 0) { *dst++ = static_cast<CharDst>(ch); }
+    }
 
-        template <typename CharDst, typename CharSrc,
-                  typename std::enable_if<std::is_convertible<CharSrc, CharDst>::value, bool>::type = true>
-        USF_ALWAYS_INLINE static USF_CPP14_CONSTEXPR
-        void assign(CharDst*& dst, CharSrc ch, std::ptrdiff_t count) noexcept
-        {
-            while((count--) > 0) { *dst++ = static_cast<CharDst>(ch); }
-        }
+    template <typename CharDst, typename CharSrc,
+              typename std::enable_if<std::is_convertible<CharSrc, CharDst>::value, bool>::type = true>
+    USF_ALWAYS_INLINE static constexpr void copy(CharDst *&dst, const CharSrc *src, std::ptrdiff_t count) noexcept {
+      while ((count--) > 0) { *dst++ = static_cast<CharDst>(*src++); }
+    }
 
-        template <typename CharDst, typename CharSrc,
-                  typename std::enable_if<std::is_convertible<CharSrc, CharDst>::value, bool>::type = true>
-        USF_ALWAYS_INLINE static USF_CPP14_CONSTEXPR
-        void copy(CharDst*& dst, const CharSrc* src, std::ptrdiff_t count) noexcept
-        {
-            while((count--) > 0) { *dst++ = static_cast<CharDst>(*src++); }
-        }
+    template <typename CharT>
+    USF_ALWAYS_INLINE static constexpr std::ptrdiff_t length(const CharT *str) noexcept {
+      const CharT *str_begin = str;
 
-        template <typename CharT> USF_ALWAYS_INLINE static USF_CPP14_CONSTEXPR
-        std::ptrdiff_t length(const CharT* str) noexcept
-        {
-            const CharT* str_begin = str;
+      while (*str != CharT{}) { ++str; }
 
-            while(*str != CharT{}) { ++str; }
+      return str - str_begin;
+    }
+  };
 
-            return str - str_begin;
-        }
-};
+  // ----------------------------------------------------------------------------
+  // Custom type traits
+  // ----------------------------------------------------------------------------
 
+  template <typename T>
+  struct always_false : std::false_type {
+  };
 
-// ----------------------------------------------------------------------------
-// Custom type traits
-// ----------------------------------------------------------------------------
+}  // namespace usf::internal
 
-template <typename T>
-struct always_false : std::false_type {};
-
-} // namespace internal
-} // namespace usf
-
-#endif // USF_TRAITS_HPP
+#endif  // USF_TRAITS_HPP

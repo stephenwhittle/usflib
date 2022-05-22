@@ -7,63 +7,55 @@
 #ifndef USF_ARG_CUSTOM_TYPE_HPP
 #define USF_ARG_CUSTOM_TYPE_HPP
 
-namespace usf
-{
-namespace internal
-{
+namespace usf {
+namespace internal {
 
-template<typename CharT>
-class ArgCustomType
-{
-    public:
+  template <typename CharT>
+  class ArgCustomType {
+   public:
+    // --------------------------------------------------------------------
+    // PUBLIC MEMBER FUNCTIONS
+    // --------------------------------------------------------------------
 
-        // --------------------------------------------------------------------
-        // PUBLIC MEMBER FUNCTIONS
-        // --------------------------------------------------------------------
+    constexpr ArgCustomType() = delete;
 
-        USF_CPP14_CONSTEXPR ArgCustomType() = delete;
+    template <typename T, std::span<CharT> (*func)(std::span<CharT>, const T&)>
+    static constexpr ArgCustomType create(const T* obj) {
+      return ArgCustomType(invoke_func<T, func>, obj);
+    }
 
-        template<typename T, BasicStringSpan<CharT>(*func)(BasicStringSpan<CharT>, const T&)>
-        static USF_CPP14_CONSTEXPR ArgCustomType create(const T* obj)
-        {
-            return ArgCustomType(invoke_func<T, func>, obj);
-        }
+    constexpr std::span<CharT> operator()(std::span<CharT> dst) const {
+      return m_function(dst, m_obj);
+    }
 
-        USF_CPP14_CONSTEXPR BasicStringSpan<CharT> operator()(BasicStringSpan<CharT> dst) const
-        {
-            return m_function(dst, m_obj);
-        }
+   private:
+    // --------------------------------------------------------------------
+    // PRIVATE TYPE ALIASES
+    // --------------------------------------------------------------------
 
-    private:
+    using FunctionType = std::span<CharT> (*)(std::span<CharT>, const void*);
 
-        // --------------------------------------------------------------------
-        // PRIVATE TYPE ALIASES
-        // --------------------------------------------------------------------
+    // --------------------------------------------------------------------
+    // PRIVATE MEMBER FUNCTIONS
+    // --------------------------------------------------------------------
 
-        using FunctionType = BasicStringSpan<CharT>(*)(BasicStringSpan<CharT>, const void*);
+    constexpr ArgCustomType(const FunctionType func, const void* obj)
+        : m_function{func}, m_obj{obj} {}
 
-        // --------------------------------------------------------------------
-        // PRIVATE MEMBER FUNCTIONS
-        // --------------------------------------------------------------------
+    template <typename T, std::span<CharT> (*func)(std::span<CharT>, const T&)>
+    static constexpr std::span<CharT> invoke_func(std::span<CharT> dst, const void* obj) {
+      return func(dst, *static_cast<const T*>(obj));
+    }
 
-        USF_CPP14_CONSTEXPR ArgCustomType(const FunctionType func, const void* obj)
-            : m_function{func}, m_obj{obj} {}
+    // --------------------------------------------------------------------
+    // PRIVATE VARIABLES
+    // --------------------------------------------------------------------
 
-        template<typename T, BasicStringSpan<CharT>(*func)(BasicStringSpan<CharT>, const T&)>
-        static USF_CPP14_CONSTEXPR BasicStringSpan<CharT> invoke_func(BasicStringSpan<CharT> dst, const void* obj)
-        {
-            return func(dst, *static_cast<const T*>(obj));
-        }
+    const FunctionType m_function{nullptr};
+    const void* m_obj{nullptr};
+  };
 
-        // --------------------------------------------------------------------
-        // PRIVATE VARIABLES
-        // --------------------------------------------------------------------
+}
+}  // namespace usf::internal
 
-        const FunctionType m_function{nullptr};
-        const void*        m_obj     {nullptr};
-};
-
-} // namespace internal
-} // namespace usf
-
-#endif // USF_ARG_CUSTOM_TYPE_HPP
+#endif  // USF_ARG_CUSTOM_TYPE_HPP
