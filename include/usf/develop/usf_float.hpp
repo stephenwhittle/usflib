@@ -19,7 +19,7 @@ namespace usf::internal {
     // --------------------------------------------------------------------
 
     template <typename CharT>
-    static USF_CPP14_CONSTEXPR int convert(CharT* const significand, int &exponent, double value, const bool format_fixed, const int precision) noexcept {
+    static constexpr int convert(CharT *const significand, int &exponent, double value, const bool format_fixed, const int precision) noexcept {
       uint64_t ipart = 0;  // i is integer part, eg for 3.1415 the i part is 3
       uint64_t fpart = 0;  // f is the float part, eg for 3.1415 the f part is 1415
 
@@ -102,8 +102,8 @@ namespace usf::internal {
     // --------------------------------------------------------------------
 
     template <typename CharT>
-    static USF_CPP14_CONSTEXPR int round(CharT *const significand, const int significand_size, int &exponent,
-                                         const bool format_fixed, const int round_index) noexcept {
+    static constexpr int round(CharT *const significand, const int significand_size, int &exponent,
+                               const bool format_fixed, const int round_index) noexcept {
       CharT *it = significand + round_index;
 
       bool round_up = false;
@@ -173,7 +173,7 @@ namespace usf::internal {
     // Evaluates the range [first, last), truncates all the trailing zeros and return the
     // new range size. Keeps always at least 1 element of the range (even if it is zero).
     template <typename CharT>
-    static USF_CPP14_CONSTEXPR int remove_trailing_zeros(const CharT *const first, CharT* last) noexcept {
+    static constexpr int remove_trailing_zeros(const CharT *const first, CharT *last) noexcept {
       while ((last - 1) > first && *(last - 1) == '0') { --last; }
 
       // Buffer termination is not really necessary since the caller

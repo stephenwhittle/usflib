@@ -9,10 +9,9 @@
 
 namespace usf::internal {
 
-  template<typename CharT>
+  template <typename CharT>
   class ArgFormat {
-  public:
-
+   public:
     // --------------------------------------------------------------------
     // PUBLIC TYPE ALIASES
     // --------------------------------------------------------------------
@@ -63,39 +62,39 @@ namespace usf::internal {
      * @param fmt The string_view  to the format string.
      * @param arg_count The number of format specifiers in the entire string, used for checking positional argument index validity.
      */
-    constexpr ArgFormat(std::basic_string_view<CharT> &fmt, const int arg_count) { // TODO: Divide more
+    constexpr ArgFormat(std::basic_string_view<CharT> &fmt, const int arg_count) {  // TODO: Divide more
       // An fmt string of {:d} is used as an example, but the same principle applies to formats using other characters (eg {:f}, {:b})
       // At this point, the fmt string_view contains format instructions in the form of {:d}
-      const_iterator it = fmt.cbegin(); // This iterator will iterate through the fmt string to figure out what the format is
+      const_iterator it = fmt.cbegin();  // This iterator will iterate through the fmt string to figure out what the format is
 
-      USF_ENFORCE(*it == '{', std::runtime_error); // Make sure that the format starts with a { otherwise something has gone wrong in parsing the args
+      USF_ENFORCE(*it == '{', std::runtime_error);  // Make sure that the format starts with a { otherwise something has gone wrong in parsing the args
 
-      ++it; // Move the iterator past the '{' character
+      ++it;  // Move the iterator past the '{' character
 
-      if (*it >= '0' && *it <= '9') { // This is entered when the format is a positional argument (eg {0}, {1})
+      if (*it >= '0' && *it <= '9') {  // This is entered when the format is a positional argument (eg {0}, {1})
         // Index limited to `arg_count` value.
-        m_index = static_cast<int8_t>(parse_positive_small_int(it, arg_count)); // TODO: What this does
+        m_index = static_cast<int8_t>(parse_positive_small_int(it, arg_count));  // TODO: What this does
       }
 
       // At this point the  iterator string is ":d}"
-      if (*it == ':' && *(it + 1) != '}') { // This is entered when there is a character between the ':' and ending '}'
+      if (*it == ':' && *(it + 1) != '}') {  // This is entered when there is a character between the ':' and ending '}'
         // A format spec is expected next...
-        m_flags = Flags::kNone; // TODO: What do flags do
+        m_flags = Flags::kNone;  // TODO: What do flags do
 
-        ++it; // Remove the empty format flag (which is ':')
+        ++it;  // Remove the empty format flag (which is ':')
 
         // Try to parse alignment flag at second character of format spec as a fill character is first
-        m_flags = parse_align_flag(*(it + 1)); // This would, for example, apply for a {:_=14d}, where the '=' is numeric align and '_' is the fill char
+        m_flags = parse_align_flag(*(it + 1));  // This would, for example, apply for a {:_=14d}, where the '=' is numeric align and '_' is the fill char
 
-        if (m_flags != Flags::kNone) { // If an alignment character was found at the second character, extract the fill character
-          USF_ENFORCE(*it != '{' && *it != '}', std::runtime_error); // The fill character can be any character except '{' or '}'
+        if (m_flags != Flags::kNone) {                                // If an alignment character was found at the second character, extract the fill character
+          USF_ENFORCE(*it != '{' && *it != '}', std::runtime_error);  // The fill character can be any character except '{' or '}'
 
-          m_fill_char = *it; // The fill character should be at the current iterator since the alignment is in the next position
-          it += 2; // Increment past both the fill and alignment characters
-        } else { // Alignment flag not present at the second character of format spec, so try to parse the alignment flag at the first character instead
-          m_flags = parse_align_flag(*it); // Attempt a parse at single character, eg for {:=14d}
+          m_fill_char = *it;                // The fill character should be at the current iterator since the alignment is in the next position
+          it += 2;                          // Increment past both the fill and alignment characters
+        } else {                            // Alignment flag not present at the second character of format spec, so try to parse the alignment flag at the first character instead
+          m_flags = parse_align_flag(*it);  // Attempt a parse at single character, eg for {:=14d}
 
-          if (m_flags != Flags::kNone) { // If an alignment character was found, increment the iterator past it
+          if (m_flags != Flags::kNone) {  // If an alignment character was found, increment the iterator past it
             ++it;
           }
         }
@@ -114,7 +113,7 @@ namespace usf::internal {
             m_flags |= Flags::kSignSpace;
             ++it;
             break;
-          default :
+          default:
             break;
         }
 
@@ -127,25 +126,25 @@ namespace usf::internal {
         bool fill_zero = false;
 
         // Parse fill zero flag
-        if (*it == '0') { // Zero pading looks like "{:014d}" where 14 is the total width
-          fill_zero = true; // If the iterator is 0, then there is 0 fill
-          ++it; // Proceed past the '0'
+        if (*it == '0') {    // Zero pading looks like "{:014d}" where 14 is the total width
+          fill_zero = true;  // If the iterator is 0, then there is 0 fill
+          ++it;              // Proceed past the '0'
         }
 
         // Parse width
-        if (*it >= '0' && *it <= '9') { // Parse how many characters wide the format should end up as
-          m_width = parse_positive_small_int(it, 255); // Limit width to 255 characters
+        if (*it >= '0' && *it <= '9') {                 // Parse how many characters wide the format should end up as
+          m_width = parse_positive_small_int(it, 255);  // Limit width to 255 characters
         }
 
         // Parse precision
-        if (*it == '.') { // Check for the decimal point which signifies a float precision
+        if (*it == '.') {  // Check for the decimal point which signifies a float precision
           ++it;
-          USF_ENFORCE(*it >= '0' && *it <= '9', std::runtime_error); // Check for a missing/invalid precision specifier
-          m_precision = static_cast<int8_t>(parse_positive_small_int(it, 127)); // Extract the precision length from the string
+          USF_ENFORCE(*it >= '0' && *it <= '9', std::runtime_error);             // Check for a missing/invalid precision specifier
+          m_precision = static_cast<int8_t>(parse_positive_small_int(it, 127));  // Extract the precision length from the string
         }
 
         // Parse type
-        if (*it != '}') { // Check that the format isn't something like {}
+        if (*it != '}') {  // Check that the format isn't something like {}
           switch (*it++) {
             // Check each of the possible types
             case 'c':
@@ -157,7 +156,8 @@ namespace usf::internal {
               break;
 
             case 'X':
-              m_flags |= Flags::kUppercase;    USF_FALLTHROUGH;
+              m_flags |= Flags::kUppercase;
+              USF_FALLTHROUGH;
             case 'x':
               m_type = Type::kIntegerHex;
               break;
@@ -167,31 +167,36 @@ namespace usf::internal {
               break;
 
             case 'B':
-              m_flags |= Flags::kUppercase;    USF_FALLTHROUGH;
+              m_flags |= Flags::kUppercase;
+              USF_FALLTHROUGH;
             case 'b':
               m_type = Type::kIntegerBin;
               break;
 
             case 'P':
-              m_flags |= Flags::kUppercase;    USF_FALLTHROUGH;
+              m_flags |= Flags::kUppercase;
+              USF_FALLTHROUGH;
             case 'p':
               m_type = Type::kPointer;
               break;
 
             case 'F':
-              m_flags |= Flags::kUppercase;    USF_FALLTHROUGH;
+              m_flags |= Flags::kUppercase;
+              USF_FALLTHROUGH;
             case 'f':
               m_type = Type::kFloatFixed;
               break;
 
             case 'E':
-              m_flags |= Flags::kUppercase;    USF_FALLTHROUGH;
+              m_flags |= Flags::kUppercase;
+              USF_FALLTHROUGH;
             case 'e':
               m_type = Type::kFloatScientific;
               break;
 
             case 'G':
-              m_flags |= Flags::kUppercase;    USF_FALLTHROUGH;
+              m_flags |= Flags::kUppercase;
+              USF_FALLTHROUGH;
             case 'g':
               m_type = Type::kFloatGeneral;
               break;
@@ -200,7 +205,7 @@ namespace usf::internal {
               m_type = Type::kString;
               break;
 
-            default : // A character specifier must be found otherwise there is an error
+            default:  // A character specifier must be found otherwise there is an error
               m_type = Type::kInvalid;
               break;
           }
@@ -241,24 +246,24 @@ namespace usf::internal {
       // Test for unterminated argument format spec.
       USF_ENFORCE(it < fmt.cend() && *it++ == '}', std::runtime_error);
 
-      fmt.remove_prefix(static_cast<uint32_t>(it - fmt.cbegin())); // TODO: Resolve sign error better
+      fmt.remove_prefix(static_cast<uint32_t>(it - fmt.cbegin()));  // TODO: Resolve sign error better
     }
 
     // Writes the alignment (sign, prefix and fill before) for any
     // argument type. Returns the fill counter to write after argument.
-    constexpr int write_alignment(iterator &it, const_iterator end, int digits, const bool negative) const { // TODO: Figure out what this does
+    constexpr int write_alignment(iterator &it, const_iterator end, int digits, const bool negative) const {  // TODO: Figure out what this does
       digits += sign_width(negative) + prefix_width();
 
       int fill_after = 0;
 
-      if (width() <= digits) { // If the width of the numbers is <= the calculated full length, it means that there is a negative sign / prefix (eg hex, bin, oct) or it is a decimal number
-        USF_ENFORCE(it + digits < end, std::runtime_error); // Check that the total width of the characters to be written does not exceed the size of the buffer
-        write_sign(it, negative); // Write a negative sign if applicable
-        write_prefix(it); // Write the prefix if applicable
+      if (width() <= digits) {                               // If the width of the numbers is <= the calculated full length, it means that there is a negative sign / prefix (eg hex, bin, oct) or it is a decimal number
+        USF_ENFORCE(it + digits < end, std::runtime_error);  // Check that the total width of the characters to be written does not exceed the size of the buffer
+        write_sign(it, negative);                            // Write a negative sign if applicable
+        write_prefix(it);                                    // Write the prefix if applicable
       } else {
-        USF_ENFORCE(it + width() < end, std::runtime_error); // Check that the total width of the characters to be written by appending the number will not exceed the buffer size
+        USF_ENFORCE(it + width() < end, std::runtime_error);  // Check that the total width of the characters to be written by appending the number will not exceed the buffer size
 
-        int fill_count = width() - digits; //
+        int fill_count = width() - digits;  //
 
         const Align al = align();
 
@@ -269,7 +274,7 @@ namespace usf::internal {
           fill_count /= 2;
         }
 
-        if (al != Align::kLeft && al != Align::kNumeric) { // If it is right align
+        if (al != Align::kLeft && al != Align::kNumeric) {  // If it is right align
           // None (default right), Right or Center alignment
           CharTraits::assign(it, fill_char(), fill_count);
         }
@@ -289,11 +294,11 @@ namespace usf::internal {
 
     inline constexpr Type type() const noexcept { return m_type; }
 
-    inline constexpr int width() const noexcept { return static_cast<int>(m_width    ); }
+    inline constexpr int width() const noexcept { return static_cast<int>(m_width); }
 
     inline constexpr int precision() const noexcept { return static_cast<int>(m_precision); }
 
-    inline constexpr int index() const noexcept { return static_cast<int>(m_index    ); }
+    inline constexpr int index() const noexcept { return static_cast<int>(m_index); }
 
     inline constexpr Align align() const noexcept { return Align(m_flags & Flags::kAlignBitmask); }
 
@@ -345,14 +350,13 @@ namespace usf::internal {
       return m_type >= Type::kIntegerHex && m_type <= Type::kFloatGeneral;
     }
 
-    inline USF_CPP14_CONSTEXPR void default_align_left() noexcept {
+    inline constexpr void default_align_left() noexcept {
       if ((m_flags & Flags::kAlignBitmask) == Flags::kAlignNone) {
         m_flags |= Flags::kAlignLeft;
       }
     }
 
-  private:
-
+   private:
     // --------------------------------------------------------------------
     // PRIVATE DEFINITIONS
     // --------------------------------------------------------------------
@@ -399,10 +403,11 @@ namespace usf::internal {
     inline constexpr int prefix_width() const noexcept {
       // Alternative format is valid for hexadecimal (including
       // pointers), octal, binary and all floating point types.
-      return (!hash() || type_is_float()) ? 0 : type_is_integer_oct() ? 1 : 2;
+      return (!hash() || type_is_float()) ? 0 : type_is_integer_oct() ? 1
+                                                                      : 2;
     }
 
-    USF_CPP14_CONSTEXPR void write_sign(iterator &it, const bool negative) const noexcept {
+    constexpr void write_sign(iterator &it, const bool negative) const noexcept {
       if (negative) {
         *it++ = '-';
       } else {
@@ -418,7 +423,7 @@ namespace usf::internal {
       }
     }
 
-    USF_CPP14_CONSTEXPR void write_prefix(iterator &it) const noexcept {
+    constexpr void write_prefix(iterator &it) const noexcept {
       // Alternative format is valid for hexadecimal (including
       // pointers), octal, binary and all floating point types.
       if (hash() && !type_is_float()) {
@@ -446,11 +451,11 @@ namespace usf::internal {
     static constexpr uint8_t parse_positive_small_int(const_iterator &it, const int max_value) {
       assert(max_value < 256);
 
-      int value = 0; // The running converted number
-      do { // TODO: Stop after 3 parsed characters as extra measure
+      int value = 0;  // The running converted number
+      do {            // TODO: Stop after 3 parsed characters as extra measure
         value = (value * 10) + static_cast<int>(*it++ - '0');
-        USF_ENFORCE(value <= max_value, std::runtime_error); // Check for overflow
-      } while (*it >= '0' && *it <= '9'); // Keep parsing the string until a non-numeric value is reached
+        USF_ENFORCE(value <= max_value, std::runtime_error);  // Check for overflow
+      } while (*it >= '0' && *it <= '9');                     // Keep parsing the string until a non-numeric value is reached
 
       return static_cast<uint8_t>(value);
     }
@@ -460,7 +465,7 @@ namespace usf::internal {
      * @param ch The character that could be an alignment type
      * @returns The flag which represents the alignment of the argument, or a none flag if the character is not an alignment signifier
      */
-    static USF_CPP14_CONSTEXPR uint8_t parse_align_flag(const CharT ch) noexcept {
+    static constexpr uint8_t parse_align_flag(const CharT ch) noexcept {
       switch (ch) {
         case '<':
           return Flags::kAlignLeft;
@@ -474,7 +479,7 @@ namespace usf::internal {
         case '=':
           return Flags::kAlignNumeric;
           break;
-        default :
+        default:
           return Flags::kNone;
           break;
       }
@@ -492,6 +497,6 @@ namespace usf::internal {
     int8_t m_index = -1;
   };
 
-} // namespace usf
+}  // namespace usf::internal
 
-#endif // USF_ARG_FORMAT_HPP
+#endif  // USF_ARG_FORMAT_HPP

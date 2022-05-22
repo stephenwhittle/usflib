@@ -9,62 +9,57 @@
 
 namespace usf::internal {
 
-  constexpr uint32_t pow10_uint32_lut[]
-        {
-              1,
-              10,
-              100,
-              1000,
-              10000,
-              100000,
-              1000000,
-              10000000,
-              100000000,
-              1000000000
-        };
+  constexpr uint32_t pow10_uint32_lut[]{
+      1,
+      10,
+      100,
+      1000,
+      10000,
+      100000,
+      1000000,
+      10000000,
+      100000000,
+      1000000000};
 
-  constexpr uint64_t pow10_uint64_lut[]
-        {
-              1,
-              10,
-              100,
-              1000,
-              10000,
-              100000,
-              1000000,
-              10000000,
-              100000000,
-              1000000000,
-              10000000000,
-              100000000000,
-              1000000000000,
-              10000000000000,
-              100000000000000,
-              1000000000000000,
-              10000000000000000,
-              100000000000000000,
-              1000000000000000000,
-              10000000000000000000U
-        };
+  constexpr uint64_t pow10_uint64_lut[]{
+      1,
+      10,
+      100,
+      1000,
+      10000,
+      100000,
+      1000000,
+      10000000,
+      100000000,
+      1000000000,
+      10000000000,
+      100000000000,
+      1000000000000,
+      10000000000000,
+      100000000000000,
+      1000000000000000,
+      10000000000000000,
+      100000000000000000,
+      1000000000000000000,
+      10000000000000000000U};
 
   constexpr char digits_hex_uppercase[]{"0123456789ABCDEF"};
   constexpr char digits_hex_lowercase[]{"0123456789abcdef"};
 
   class Integer {
-  public:
-
+   public:
     // --------------------------------------------------------------------
     // PUBLIC STATIC FUNCTIONS
     // --------------------------------------------------------------------
 
     // -------- POWERS OF 10 ----------------------------------------------
-    static USF_CPP14_CONSTEXPR uint32_t pow10_uint32(const int index) noexcept {
+    static constexpr uint32_t pow10_uint32(const int index) noexcept {
       assert(index >= 0 && index < 10);
 
       return pow10_uint32_lut[index];
     }
 
-    static USF_CPP14_CONSTEXPR uint64_t pow10_uint64(const int index) noexcept {
+    static constexpr uint64_t pow10_uint64(const int index) noexcept {
       assert(index >= 0 && index < 20);
 
       return pow10_uint64_lut[index];
@@ -80,7 +75,7 @@ namespace usf::internal {
      * @param n The number whose number of digits are being counted.
      * @returns The number of digits in n.
      */
-    static USF_CPP14_CONSTEXPR int count_digits_dec(const uint32_t n) noexcept {
+    static constexpr int count_digits_dec(const uint32_t n) noexcept {
       if (n < 10) return 1;
 
       // The algorithm below doesn't work when `n` is 0 because:
@@ -96,7 +91,7 @@ namespace usf::internal {
       return t - (n < pow10_uint32_lut[t]) + 1;
     }
 
-    static USF_CPP14_CONSTEXPR int count_digits_dec(const uint64_t n) noexcept {
+    static constexpr int count_digits_dec(const uint64_t n) noexcept {
       if (n <= std::numeric_limits<uint32_t>::max()) {
         return count_digits_dec(static_cast<uint32_t>(n));
       }
@@ -114,29 +109,31 @@ namespace usf::internal {
       return t - (n < pow10_uint64_lut[t]) + 1;
     }
 
-    static USF_CPP14_CONSTEXPR int count_digits_bin(const uint32_t n) noexcept {
+    static constexpr int count_digits_bin(const uint32_t n) noexcept {
       // The result of __builtin_clz() is undefined if `n` is 0.
       return (n < 2) ? 1 : (32 - __builtin_clz(n));
     }
 
-    static USF_CPP14_CONSTEXPR int count_digits_bin(const uint64_t n) noexcept {
+    static constexpr int count_digits_bin(const uint64_t n) noexcept {
       // The result of __builtin_clzll() is undefined if `n` is 0.
       return (n < 2) ? 1 : (64 - __builtin_clzll(n));
     }
 
-    template<typename T,
-          typename std::enable_if<
-                std::numeric_limits<T>::is_integer && std::is_unsigned<T>::value, bool>::type = true>
-    static USF_CPP14_CONSTEXPR int count_digits_oct(T n) noexcept {
+    template <typename T,
+              typename std::enable_if<
+                  std::numeric_limits<T>::is_integer && std::is_unsigned<T>::value, bool>::type
+              = true>
+    static constexpr int count_digits_oct(T n) noexcept {
       int digits = 1;
       while ((n >>= 3U) != 0) { ++digits; }
       return digits;
     }
 
-    template<typename T,
-          typename std::enable_if<
-                std::numeric_limits<T>::is_integer && std::is_unsigned<T>::value, bool>::type = true>
-    static USF_CPP14_CONSTEXPR int count_digits_hex(T n) noexcept {
+    template <typename T,
+              typename std::enable_if<
+                  std::numeric_limits<T>::is_integer && std::is_unsigned<T>::value, bool>::type
+              = true>
+    static constexpr int count_digits_hex(T n) noexcept {
       int digits = 1;
       while ((n >>= 4U) != 0) { ++digits; }
       return digits;
@@ -146,7 +143,7 @@ namespace usf::internal {
     // Based on the code from Hacker's Delight:
     // http://www.hackersdelight.org/divcMore.pdf
     // --------------------- ----------------------------------------------
-    static USF_CPP14_CONSTEXPR uint32_t div10(const uint32_t n) noexcept {
+    static constexpr uint32_t div10(const uint32_t n) noexcept {
 #if defined(__arm__)
       uint32_t q = (n >> 1) + (n >> 2);
       q += (q >> 4);
@@ -163,7 +160,7 @@ namespace usf::internal {
 #endif
     }
 
-    static USF_CPP14_CONSTEXPR uint64_t div10(const uint64_t n) noexcept {
+    static constexpr uint64_t div10(const uint64_t n) noexcept {
 #if defined(__arm__)
       uint64_t q = (n >> 1) + (n >> 2);
       q += (q >> 4);
@@ -193,8 +190,8 @@ namespace usf::internal {
     // dst   ->      ^
 
     // -------- DECIMAL CONVERSION ----------------------------------------
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR void convert_dec(CharT *dst, uint32_t value) noexcept {
+    template <typename CharT>
+    static constexpr void convert_dec(CharT *dst, uint32_t value) noexcept {
       do {
         const uint32_t v = value;
         value = div10(value);
@@ -202,8 +199,8 @@ namespace usf::internal {
       } while (value);
     }
 
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR void convert_dec(CharT *dst, uint64_t value) noexcept {
+    template <typename CharT>
+    static constexpr void convert_dec(CharT *dst, uint64_t value) noexcept {
       while (value > std::numeric_limits<uint32_t>::max()) {
         const uint64_t v = value;
         value = div10(value);
@@ -214,8 +211,8 @@ namespace usf::internal {
     }
 
     // -------- BINARY CONVERSION -----------------------------------------
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR void convert_bin(CharT *dst, uint32_t value) noexcept {
+    template <typename CharT>
+    static constexpr void convert_bin(CharT *dst, uint32_t value) noexcept {
       do {
         const uint32_t v = value;
         value >>= 1U;
@@ -223,8 +220,8 @@ namespace usf::internal {
       } while (value);
     }
 
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR void convert_bin(CharT *dst, uint64_t value) noexcept {
+    template <typename CharT>
+    static constexpr void convert_bin(CharT *dst, uint64_t value) noexcept {
       while (value > std::numeric_limits<uint32_t>::max()) {
         const uint64_t v = value;
         value >>= 1U;
@@ -235,8 +232,8 @@ namespace usf::internal {
     }
 
     // -------- OCTAL CONVERSION ------------------------------------------
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR void convert_oct(CharT *dst, uint32_t value) noexcept {
+    template <typename CharT>
+    static constexpr void convert_oct(CharT *dst, uint32_t value) noexcept {
       do {
         const uint32_t v = value;
         value >>= 3U;
@@ -244,8 +241,8 @@ namespace usf::internal {
       } while (value);
     }
 
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR void convert_oct(CharT *dst, uint64_t value) noexcept {
+    template <typename CharT>
+    static constexpr void convert_oct(CharT *dst, uint64_t value) noexcept {
       while (value > std::numeric_limits<uint32_t>::max()) {
         const uint64_t v = value;
         value >>= 3U;
@@ -256,8 +253,8 @@ namespace usf::internal {
     }
 
     // -------- HEXADECIMAL CONVERSION ------------------------------------
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR void convert_hex(CharT *dst, uint32_t value, const bool uppercase) noexcept {
+    template <typename CharT>
+    static constexpr void convert_hex(CharT *dst, uint32_t value, const bool uppercase) noexcept {
       const char *digits = uppercase ? digits_hex_uppercase : digits_hex_lowercase;
 
       do {
@@ -265,11 +262,10 @@ namespace usf::internal {
         value >>= 4U;
         *(--dst) = static_cast<CharT>(digits[v - (value << 4U)]);
       } while (value);
-
     }
 
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR void convert_hex(CharT *dst, uint64_t value, const bool uppercase) noexcept {
+    template <typename CharT>
+    static constexpr void convert_hex(CharT *dst, uint64_t value, const bool uppercase) noexcept {
       const char *digits = uppercase ? digits_hex_uppercase : digits_hex_lowercase;
 
       while (value > std::numeric_limits<uint32_t>::max()) {
@@ -282,6 +278,6 @@ namespace usf::internal {
     }
   };
 
-} // namespace usf
+}  // namespace usf::internal
 
-#endif // USF_INTEGER_HPP
+#endif  // USF_INTEGER_HPP

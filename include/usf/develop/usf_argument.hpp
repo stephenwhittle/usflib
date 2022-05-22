@@ -155,8 +155,8 @@ namespace usf {
       }
 
       template <typename T, typename std::enable_if<std::is_unsigned<T>::value, bool>::type = true>
-      static USF_CPP14_CONSTEXPR void format_integer(iterator &it, iterator end, const Format &format,
-                                                     const T value, const bool negative = false) {
+      static constexpr void format_integer(iterator &it, iterator end, const Format &format,
+                                           const T value, const bool negative = false) {
         int fill_after = 0;  //
 
         if (format.type_is_none() || format.type_is_integer_dec()) {  // If there is no specified format or base 10
@@ -214,47 +214,10 @@ namespace usf {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_float(), std::runtime_error);
 
-        auto original_start = it;
-        int precision = format.precision();
-        if (precision == -1) precision = 6;
-        if (format.type_is_none() || format.type_is_float_fixed()) {
-          auto [ptr, err] = std::to_chars(it, it + 36, value, std::chars_format::fixed, precision);
-          auto ptr2 = ptr;
-          if (format.type_is_none())
-            while (*(ptr2 - 1) == '0') --ptr2;
-          const auto digits = ptr2 - original_start;  // Count how many digits value has
-          auto fill_after = format.write_alignment(it, end, digits, false);
-          auto [ptr_second, err_second] = std::to_chars(it, it + 36, value, std::chars_format::fixed, precision);
-          ptr2 = ptr_second;
-          if (format.type_is_none())
-            while (*(ptr2 - 1) == '0') --ptr2;
-          it = ptr2;
-          CharTraits::assign(it, format.fill_char(), fill_after);
-        } else if (format.type_is_float_general()) {
-          auto [ptr, err] = std::to_chars(it, it + 36, value, std::chars_format::general, precision);
-          auto ptr2 = ptr;
-          if (format.type_is_none())
-            while (*(ptr2 - 1) == '0') --ptr2;
-          const auto digits = ptr2 - original_start;  // Count how many digits value has
-          auto fill_after = format.write_alignment(it, end, digits, false);
-          auto [ptr_second, err_second] = std::to_chars(it, it + 36, value, std::chars_format::general, precision);
-          ptr2 = ptr_second;
-          if (format.type_is_none())
-            while (*(ptr2 - 1) == '0') --ptr2;
-          it = ptr2;
-          CharTraits::assign(it, format.fill_char(), fill_after);
-        } else if (format.type_is_float_scientific()) {
-          auto [ptr, err] = std::to_chars(it, it + 36, value, std::chars_format::scientific, precision);
-          auto ptr2 = ptr;
-//          while (*(ptr2 - 1) == '0') --ptr2;
-          const auto digits = ptr2 - original_start;  // Count how many digits value has
-          auto fill_after = format.write_alignment(it, end, digits, false);
-          auto [ptr_second, err_second] = std::to_chars(it, it + 36, value, std::chars_format::scientific, precision);
-          ptr2 = ptr_second;
-//          while (*(ptr2 - 1) == '0') --ptr2;
-          it = ptr2;
-          CharTraits::assign(it, format.fill_char(), fill_after);
-        }
+        if (std::isnan(value)) {
+          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
+        } else {
+          const bool negative = std::signbit(value);
 
           if (std::isinf(value)) {
             format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
@@ -348,6 +311,7 @@ namespace usf {
 
                     CharTraits::copy(it, significand, ipart_digits);
                     *it++ = '.';
+
                     const int copy_size = significand_size - ipart_digits;
                     CharTraits::copy(it, significand + ipart_digits, copy_size);
 
@@ -368,6 +332,7 @@ namespace usf {
 
                 if (precision > 0 || format.hash()) {
                   *it++ = '.';
+
                   const int copy_size = significand_size - 1;
                   CharTraits::copy(it, significand + 1, copy_size);
                   CharTraits::assign(it, '0', precision - copy_size);
@@ -656,18 +621,17 @@ namespace usf {
   // User-defined custom type formatter forward declaration
   template <typename CharT, typename T>
   struct Formatter {
-    static std::basic_string_view<CharT> format_to(std::basic_string_view<CharT>, const T &);
+    static std::span<CharT> format_to(std::span<CharT>, const T &);
   };
 
   namespace internal {
 
     // User-defined custom type
-    template <typename CharT, typename T,
-              typename std::enable_if<!std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
+    template <typename CharT, typename T, typename std::enable_if<!std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
     inline constexpr Argument<CharT> make_argument(const T &arg) {
-      using _T = typename std::decay<decltype(arg)>::type;
+      using decay_T = typename std::decay<decltype(arg)>::type;
 
-      return ArgCustomType<CharT>::template create<_T, &usf::Formatter<CharT, _T>::format_to>(&arg);
+      return ArgCustomType<CharT>::template create<decay_T, &usf::Formatter<CharT, decay_T>::format_to>(&arg);
     }
 
   }  // namespace internal
