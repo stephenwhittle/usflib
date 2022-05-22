@@ -13,21 +13,33 @@
 namespace usf::internal {
 
   class Float {
-  public:
-
+   public:
     // --------------------------------------------------------------------
     // PUBLIC STATIC FUNCTIONS
     // --------------------------------------------------------------------
 
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR
-    int convert(CharT *const significand, int &exponent,
-                double value, const bool format_fixed, const int precision) noexcept {
-      uint64_t ipart = 0;
-      uint64_t fpart = 0;
+    template <typename CharT>
+#ifdef ORIGINAL
+    static USF_CPP14_CONSTEXPR int convert(CharT* const significand, int &exponent, double value, const bool format_fixed, const int precision) noexcept {
+#else
+//    static USF_CPP14_CONSTEXPR int convert(std::span<CharT> significand, int &exponent, double value, const bool format_fixed, const int precision) noexcept {
+    static USF_CPP14_CONSTEXPR int convert(CharT* significand, int buffer_size, int &exponent, double value, const bool format_fixed, const int precision) noexcept {
+#endif
+#ifndef ORIGINAL
+      auto [ptr, err] = std::to_chars(significand, significand + buffer_size, value, std::chars_format::fixed, precision);
+      for (int i = 0; i < buffer_size; ++i){
+        if (*(significand + i) == '.') break;
+        ++exponent;
+      }
+      remove_trailing_zeros(significand, ptr);
+//      significand -= trimmed_size;
+      return ptr - significand;
+#else
+      uint64_t ipart = 0;  // i is integer part, eg for 3.1415 the i part is 3
+      uint64_t fpart = 0;  // f is the float part, eg for 3.1415 the f part is 1415
 
-      int ipart_digits = 0;
-      int fpart_digits = 0;
+      int ipart_digits = 0;  // Number of i digits
+      int fpart_digits = 0;  // Number of f digits
 
       int fpart_padding = 0;
 
@@ -97,18 +109,17 @@ namespace usf::internal {
 
       //Round to the specified precision.
       return round(significand, significand_size, exponent, format_fixed, round_index);
+#endif
     }
 
-  private:
-
+   private:
     // --------------------------------------------------------------------
     // PRIVATE STATIC FUNCTIONS
     // --------------------------------------------------------------------
 
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR
-    int round(CharT *const significand, const int significand_size, int &exponent,
-              const bool format_fixed, const int round_index) noexcept {
+    template <typename CharT>
+    static USF_CPP14_CONSTEXPR int round(CharT *const significand, const int significand_size, int &exponent,
+                                         const bool format_fixed, const int round_index) noexcept {
       CharT *it = significand + round_index;
 
       bool round_up = false;
@@ -177,9 +188,8 @@ namespace usf::internal {
 
     // Evaluates the range [first, last), truncates all the trailing zeros and return the
     // new range size. Keeps always at least 1 element of the range (even if it is zero).
-    template<typename CharT>
-    static USF_CPP14_CONSTEXPR
-    int remove_trailing_zeros(const CharT *const first, const CharT *last) noexcept {
+    template <typename CharT>
+    static USF_CPP14_CONSTEXPR int remove_trailing_zeros(const CharT *const first, CharT*& last) noexcept {
       while ((last - 1) > first && *(last - 1) == '0') { --last; }
 
       // Buffer termination is not really necessary since the caller
@@ -189,7 +199,7 @@ namespace usf::internal {
     }
   };
 
-} // namespace usf
+}  // namespace usf::internal
 
-#endif // USF_FLOAT_HPP
-#endif // !defined(USF_DISABLE_FLOAT_SUPPORT)
+#endif  // USF_FLOAT_HPP
+#endif  // !defined(USF_DISABLE_FLOAT_SUPPORT)

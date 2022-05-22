@@ -31,7 +31,7 @@ using namespace std::literals::string_view_literals;
 #define USF_TEST_FORMAT_SPEC
 #define USF_TEST_POSITIONAL_ARGS
 #define USF_TEST_CUSTOM_TYPES
-//#define USF_TEST_FLOATING_POINT
+#define USF_TEST_FLOATING_POINT
 #define USF_TEST_BENCHMARKS
 #define USF_TEST_BENCHMARK_PRINTF
 //#define USF_TEST_BENCHMARK_FMT

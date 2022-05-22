@@ -10,10 +10,9 @@
 namespace usf {
   namespace internal {
 
-    template<typename CharT>
+    template <typename CharT>
     class Argument {
-    public:
-
+     public:
       // --------------------------------------------------------------------
       // PUBLIC TYPE ALIASES
       // --------------------------------------------------------------------
@@ -30,38 +29,38 @@ namespace usf {
       constexpr Argument() = delete;
 
       constexpr Argument(const bool value) noexcept
-            : m_bool(value), m_type_id(TypeId::kBool) {}
+          : m_bool(value), m_type_id(TypeId::kBool) {}
 
       constexpr Argument(const CharT value) noexcept
-            : m_char(value), m_type_id(TypeId::kChar) {}
+          : m_char(value), m_type_id(TypeId::kChar) {}
 
       constexpr Argument(const int32_t value) noexcept
-            : m_int32(value), m_type_id(TypeId::kInt32) {}
+          : m_int32(value), m_type_id(TypeId::kInt32) {}
 
       constexpr Argument(const uint32_t value) noexcept
-            : m_uint32(value), m_type_id(TypeId::kUint32) {}
+          : m_uint32(value), m_type_id(TypeId::kUint32) {}
 
       constexpr Argument(const int64_t value) noexcept
-            : m_int64(value), m_type_id(TypeId::kInt64) {}
+          : m_int64(value), m_type_id(TypeId::kInt64) {}
 
       constexpr Argument(const uint64_t value) noexcept
-            : m_uint64(value), m_type_id(TypeId::kUint64) {}
+          : m_uint64(value), m_type_id(TypeId::kUint64) {}
 
       constexpr Argument(const void *value) noexcept
-            : m_pointer(reinterpret_cast<std::uintptr_t>(value)), m_type_id(TypeId::kPointer) {}
+          : m_pointer(reinterpret_cast<std::uintptr_t>(value)), m_type_id(TypeId::kPointer) {}
 
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
 
       constexpr Argument(const double value) noexcept
-            : m_float(value), m_type_id(TypeId::kFloat) {}
+          : m_float(value), m_type_id(TypeId::kFloat) {}
 
 #endif
 
       constexpr Argument(const std::basic_string_view<CharT> value) noexcept
-            : m_string(value), m_type_id(TypeId::kString) {}
+          : m_string(value), m_type_id(TypeId::kString) {}
 
       constexpr Argument(const ArgCustomType<CharT> value) noexcept
-            : m_custom(value), m_type_id(TypeId::kCustom) {}
+          : m_custom(value), m_type_id(TypeId::kCustom) {}
 
       USF_CPP14_CONSTEXPR void format(std::span<CharT> &dst, Format &format) const {
         iterator it = dst.begin().base();
@@ -102,11 +101,10 @@ namespace usf {
             break;
         }
 
-        dst = dst.subspan(static_cast<uint32_t>(it - dst.begin().base())); // TODO: Sign conversion
+        dst = dst.subspan(static_cast<uint32_t>(it - dst.begin().base()));  // TODO: Sign conversion
       }
 
-    private:
-
+     private:
       // --------------------------------------------------------------------
       // PRIVATE STATIC FUNCTIONS
       // --------------------------------------------------------------------
@@ -140,7 +138,7 @@ namespace usf {
         }
       }
 
-      template<typename T, typename std::enable_if<std::is_signed<T>::value, bool>::type = true>
+      template <typename T, typename std::enable_if<std::is_signed<T>::value, bool>::type = true>
       static USF_CPP14_CONSTEXPR void format_integer(iterator &it, const_iterator end,
                                                      const Format &format, const T value) {
         using unsigned_type = typename std::make_unsigned<T>::type;
@@ -151,7 +149,7 @@ namespace usf {
         format_integer(it, end, format, uvalue, negative);
       }
 
-      template<typename T, typename std::enable_if<std::is_unsigned<T>::value, bool>::type = true>
+      template <typename T, typename std::enable_if<std::is_unsigned<T>::value, bool>::type = true>
       static USF_CPP14_CONSTEXPR void format_integer(iterator &it, const_iterator end, const Format &format,
                                                      const T value, const bool negative = false) {
         int fill_after = 0;
@@ -205,8 +203,7 @@ namespace usf {
 
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
 
-      static USF_CPP14_CONSTEXPR
-      void format_float(iterator &it, const_iterator end, const Format &format, double value) {
+      static USF_CPP14_CONSTEXPR void format_float(iterator &it, iterator end, const Format &format, double value) {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_float(), std::runtime_error);
 
@@ -246,10 +243,13 @@ namespace usf {
                 if (precision > 0) { --precision; }
               }
 
-              CharT significand[36]{}; // 34 characters should be the maximum size needed
+              CharT significand[36]{};  // 34 characters should be the maximum size needed
               int exponent = 0;
-
+#ifdef ORIGINAL
               const auto significand_size = Float::convert(significand, exponent, value, format_fixed, precision);
+#else
+              const auto significand_size = Float::convert(significand, 36, exponent, value, format_fixed, precision);
+#endif
 
               if (significant_figures) {
                 if (exponent >= -4 && exponent <= precision) {
@@ -274,7 +274,9 @@ namespace usf {
                   fill_after = format.write_alignment(it, end, full_digits, negative);
 
                   *it++ = '0';
+#ifdef ORIGINAL
                   *it++ = '.';
+#endif
 
                   int zero_digits = -exponent - 1;
                   CharTraits::assign(it, '0', zero_digits);
@@ -296,7 +298,9 @@ namespace usf {
                     CharTraits::assign(it, '0', ipart_digits - significand_size);
 
                     if (precision > 0 || format.hash()) {
+#ifdef ORIGINAL
                       *it++ = '.';
+#endif
                     }
 
                     if (precision > 0) {
@@ -306,8 +310,9 @@ namespace usf {
                     // SIGNIFICAND[0:x].SIGNIFICAND[x:N]<0>
 
                     CharTraits::copy(it, significand, ipart_digits);
+#ifdef ORIGINAL
                     *it++ = '.';
-
+#endif
                     const int copy_size = significand_size - ipart_digits;
                     CharTraits::copy(it, significand + ipart_digits, copy_size);
 
@@ -327,8 +332,9 @@ namespace usf {
                 *it++ = *significand;
 
                 if (precision > 0 || format.hash()) {
+#ifdef ORIGINAL
                   *it++ = '.';
-
+#endif
                   const int copy_size = significand_size - 1;
                   CharTraits::copy(it, significand + 1, copy_size);
                   CharTraits::assign(it, '0', precision - copy_size);
@@ -347,8 +353,7 @@ namespace usf {
         }
       }
 
-      static USF_CPP14_CONSTEXPR
-      void write_float_exponent(iterator &it, int exponent, const bool uppercase) noexcept {
+      static USF_CPP14_CONSTEXPR void write_float_exponent(iterator &it, int exponent, const bool uppercase) noexcept {
         *it++ = uppercase ? 'E' : 'e';
 
         if (exponent < 0) {
@@ -371,8 +376,7 @@ namespace usf {
         }
       }
 
-      static USF_CPP14_CONSTEXPR
-      void format_float_zero(iterator &it, const_iterator end, const Format &format, const bool negative) {
+      static USF_CPP14_CONSTEXPR void format_float_zero(iterator &it, const_iterator end, const Format &format, const bool negative) {
         int precision = 0;
 
         if (format.type_is_float_fixed() || format.type_is_float_scientific()) {
@@ -404,7 +408,7 @@ namespace usf {
         CharTraits::assign(it, format.fill_char(), fill_after);
       }
 
-#endif // !defined(USF_DISABLE_FLOAT_SUPPORT)
+#endif  // !defined(USF_DISABLE_FLOAT_SUPPORT)
 
       static USF_CPP14_CONSTEXPR void format_string(iterator &it, const_iterator end,
                                                     Format &format, const std::basic_string_view<CharT> &str) {
@@ -416,14 +420,14 @@ namespace usf {
 
         // If precision is specified use it up to string size.
         const int str_length = (format.precision() == -1)
-                               ? static_cast<int>(str.size())
-                               : std::min(static_cast<int>(format.precision()), static_cast<int>(str.size()));
+                                   ? static_cast<int>(str.size())
+                                   : std::min(static_cast<int>(format.precision()), static_cast<int>(str.size()));
 
         format_string(it, end, format, str.data(), str_length);
       }
 
-      template<typename CharSrc,
-            typename std::enable_if<std::is_convertible<CharSrc, CharT>::value, bool>::type = true>
+      template <typename CharSrc,
+                typename std::enable_if<std::is_convertible<CharSrc, CharT>::value, bool>::type = true>
       static USF_CPP14_CONSTEXPR void format_string(iterator &it, const_iterator end,
                                                     const Format &format, const CharSrc *str,
                                                     const int str_length, const bool negative = false) {
@@ -470,92 +474,103 @@ namespace usf {
       TypeId m_type_id;
     };
 
-
-// Boolean
-    template<typename CharT>
+    // Boolean
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const bool arg) {
+        Argument<CharT>
+        make_argument(const bool arg) {
       return arg;
     }
 
-// Character (char)
-    template<typename CharT>
+    // Character (char)
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const char arg) {
+        Argument<CharT>
+        make_argument(const char arg) {
       return static_cast<CharT>(arg);
     }
 
-// Character (CharT != char)
-    template<typename CharT, typename std::enable_if<!std::is_same<CharT, char>::value, bool>::type = true>
+    // Character (CharT != char)
+    template <typename CharT, typename std::enable_if<!std::is_same<CharT, char>::value, bool>::type = true>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const CharT arg) {
+        Argument<CharT>
+        make_argument(const CharT arg) {
       return arg;
     }
 
-// 8 bit signed integer
-    template<typename CharT>
+    // 8 bit signed integer
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const int8_t arg) {
+        Argument<CharT>
+        make_argument(const int8_t arg) {
       return static_cast<int32_t>(arg);
     }
 
-// 8 bit unsigned integer
-    template<typename CharT>
+    // 8 bit unsigned integer
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const uint8_t arg) {
+        Argument<CharT>
+        make_argument(const uint8_t arg) {
       return static_cast<uint32_t>(arg);
     }
 
-// 16 bit signed integer
-    template<typename CharT>
+    // 16 bit signed integer
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const int16_t arg) {
+        Argument<CharT>
+        make_argument(const int16_t arg) {
       return static_cast<int32_t>(arg);
     }
 
-// 16 bit unsigned integer
-    template<typename CharT>
+    // 16 bit unsigned integer
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const uint16_t arg) {
+        Argument<CharT>
+        make_argument(const uint16_t arg) {
       return static_cast<uint32_t>(arg);
     }
 
-// 32 bit signed integer
-    template<typename CharT>
+    // 32 bit signed integer
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const int arg) {
+        Argument<CharT>
+        make_argument(const int arg) {
       return static_cast<int32_t>(arg);
     }
 
-// 32 bit unsigned integer
-    template<typename CharT>
+    // 32 bit unsigned integer
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const unsigned int arg) {
+        Argument<CharT>
+        make_argument(const unsigned int arg) {
       return static_cast<uint32_t>(arg);
     }
 
 #if (__LONG_MAX__ != __LONG_LONG_MAX__)
 
-// 32 bit signed integer
-    template<typename CharT>
+    // 32 bit signed integer
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const long int arg) {
+        Argument<CharT>
+        make_argument(const long int arg) {
       return static_cast<int32_t>(arg);
     }
 
-// 32 bit unsigned integer
-    template<typename CharT>
+    // 32 bit unsigned integer
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const unsigned long int arg) {
+        Argument<CharT>
+        make_argument(const unsigned long int arg) {
       return static_cast<uint32_t>(arg);
     }
 
-#endif // (__LONG_MAX__ != __LONG_LONG_MAX__)
+#endif  // (__LONG_MAX__ != __LONG_LONG_MAX__)
 
-// 64 bit signed integer
-    template<typename CharT>
+    // 64 bit signed integer
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const int64_t arg) {
+        Argument<CharT>
+        make_argument(const int64_t arg) {
       if (arg >= std::numeric_limits<int32_t>::min()
           && arg <= std::numeric_limits<int32_t>::max()) {
         return static_cast<int32_t>(arg);
@@ -564,10 +579,11 @@ namespace usf {
       return arg;
     }
 
-// 64 bit unsigned integer
-    template<typename CharT>
+    // 64 bit unsigned integer
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const uint64_t arg) {
+        Argument<CharT>
+        make_argument(const uint64_t arg) {
       if (arg <= std::numeric_limits<uint32_t>::max()) {
         return static_cast<uint32_t>(arg);
       }
@@ -575,65 +591,69 @@ namespace usf {
       return arg;
     }
 
-// Pointer (void*)
-    template<typename CharT>
+    // Pointer (void*)
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(void *arg) {
+        Argument<CharT>
+        make_argument(void *arg) {
       return arg;
     }
 
-// Pointer (const void*)
-    template<typename CharT>
+    // Pointer (const void*)
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(const void *arg) {
+        Argument<CharT>
+        make_argument(const void *arg) {
       return arg;
     }
 
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
 
-// Floating point (float)
-    template<typename CharT>
+    // Floating point (float)
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(float arg) {
+        Argument<CharT>
+        make_argument(float arg) {
       return static_cast<double>(arg);
     }
 
-// Floating point (double)
-    template<typename CharT>
+    // Floating point (double)
+    template <typename CharT>
     inline USF_CPP14_CONSTEXPR
-    Argument<CharT> make_argument(double arg) {
+        Argument<CharT>
+        make_argument(double arg) {
       return arg;
     }
 
-#endif // !defined(USF_DISABLE_FLOAT_SUPPORT)
+#endif  // !defined(USF_DISABLE_FLOAT_SUPPORT)
 
-// String (convertible to string view)
-    template<typename CharT, typename T,
-          typename std::enable_if<std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
+    // String (convertible to string view)
+    template <typename CharT, typename T,
+              typename std::enable_if<std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
     inline USF_CPP14_CONSTEXPR Argument<CharT> make_argument(const T &arg) {
       return std::basic_string_view<CharT>(arg);
     }
 
-  } // namespace internal
+  }  // namespace internal
 
-// User-defined custom type formatter forward declaration
-  template<typename CharT, typename T>
+  // User-defined custom type formatter forward declaration
+  template <typename CharT, typename T>
   struct Formatter {
     static std::basic_string_view<CharT> format_to(std::basic_string_view<CharT>, const T &);
   };
 
   namespace internal {
 
-// User-defined custom type
-    template<typename CharT, typename T,
-          typename std::enable_if<!std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
+    // User-defined custom type
+    template <typename CharT, typename T,
+              typename std::enable_if<!std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
     inline USF_CPP14_CONSTEXPR Argument<CharT> make_argument(const T &arg) {
       using _T = typename std::decay<decltype(arg)>::type;
 
       return ArgCustomType<CharT>::template create<_T, &usf::Formatter<CharT, _T>::format_to>(&arg);
     }
 
-  } // namespace internal
-} // namespace usf
+  }  // namespace internal
+}  // namespace usf
 
-#endif // USF_ARGUMENT_HPP
+#endif  // USF_ARGUMENT_HPP
