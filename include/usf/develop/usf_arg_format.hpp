@@ -269,7 +269,7 @@ namespace usf::internal {
           fill_count /= 2;
         }
 
-        if (al != Align::kLeft && al != Align::kNumeric) {
+        if (al != Align::kLeft && al != Align::kNumeric) { // If it is right align
           // None (default right), Right or Center alignment
           CharTraits::assign(it, fill_char(), fill_count);
         }
