@@ -70,7 +70,7 @@ namespace usf {
       constexpr void format(std::span<CharT> &dst, Format &format) const {
         iterator it = dst.begin().base();
 
-        switch (m_type_id) { // Format it according to its type
+        switch (m_type_id) {  // Format it according to its type
           case TypeId::kBool:
             format_bool(it, dst.end().base(), format, m_bool);
             break;
@@ -148,8 +148,8 @@ namespace usf {
                                                      const Format &format, const T value) {
         using unsigned_type = typename std::make_unsigned<T>::type;
 
-        const bool negative = (value < 0); // TODO: This shouldn't be needed with to_chars
-        const auto uvalue = static_cast<unsigned_type>(negative ? -value : value); // Get the absolute value
+        const bool negative = (value < 0);                                          // TODO: This shouldn't be needed with to_chars
+        const auto uvalue = static_cast<unsigned_type>(negative ? -value : value);  // Get the absolute value
 
         format_integer(it, end, format, uvalue, negative);
       }
@@ -157,21 +157,21 @@ namespace usf {
       template <typename T, typename std::enable_if<std::is_unsigned<T>::value, bool>::type = true>
       static USF_CPP14_CONSTEXPR void format_integer(iterator &it, iterator end, const Format &format,
                                                      const T value, const bool negative = false) {
-        int fill_after = 0; //
+        int fill_after = 0;  //
 
-        if (format.type_is_none() || format.type_is_integer_dec()) { // If there is no specified format or base 10
-          const auto digits = Integer::count_digits_dec(value); // Count how many digits value has
+        if (format.type_is_none() || format.type_is_integer_dec()) {  // If there is no specified format or base 10
+          const auto digits = Integer::count_digits_dec(value);       // Count how many digits value has
           fill_after = format.write_alignment(it, end, digits, negative);
-//          it += digits; // Offset the iterator by the numbe of digits
-          auto [ptr, err] = std::to_chars(it, it + digits, value); // TODO: Is it + digits always correct?
+          //          it += digits; // Offset the iterator by the numbe of digits
+          auto [ptr, err] = std::to_chars(it, it + digits, value);  // TODO: Is it + digits always correct?
           it = ptr;
-//          Integer::convert_dec(it, value); // This function writes the number from right to left, which is why the iterator was advanced by the number of digits
-        } else if (format.type_is_integer_hex()) { // If it is hex format
+          //          Integer::convert_dec(it, value); // This function writes the number from right to left, which is why the iterator was advanced by the number of digits
+        } else if (format.type_is_integer_hex()) {  // If it is hex format
           const auto digits = Integer::count_digits_hex(value);
           fill_after = format.write_alignment(it, end, digits, negative);
           it += digits;
           Integer::convert_hex(it, value, format.uppercase());
-        } else if (format.type_is_integer_oct()) { // If it is octal
+        } else if (format.type_is_integer_oct()) {  // If it is octal
           const auto digits = Integer::count_digits_oct(value);
           fill_after = format.write_alignment(it, end, digits, negative);
           it += digits;
@@ -252,11 +252,8 @@ namespace usf {
 
               CharT significand[36]{};  // 34 characters should be the maximum size needed
               int exponent = 0;
-#ifdef ORIGINAL
+
               const auto significand_size = Float::convert(significand, exponent, value, format_fixed, precision);
-#else
-              const auto significand_size = Float::convert(significand, 36, exponent, value, format_fixed, precision);
-#endif
 
               if (significant_figures) {
                 if (exponent >= -4 && exponent <= precision) {
@@ -281,9 +278,7 @@ namespace usf {
                   fill_after = format.write_alignment(it, end, full_digits, negative);
 
                   *it++ = '0';
-#ifdef ORIGINAL
                   *it++ = '.';
-#endif
 
                   int zero_digits = -exponent - 1;
                   CharTraits::assign(it, '0', zero_digits);
@@ -305,9 +300,7 @@ namespace usf {
                     CharTraits::assign(it, '0', ipart_digits - significand_size);
 
                     if (precision > 0 || format.hash()) {
-#ifdef ORIGINAL
                       *it++ = '.';
-#endif
                     }
 
                     if (precision > 0) {
@@ -317,9 +310,7 @@ namespace usf {
                     // SIGNIFICAND[0:x].SIGNIFICAND[x:N]<0>
 
                     CharTraits::copy(it, significand, ipart_digits);
-#ifdef ORIGINAL
                     *it++ = '.';
-#endif
                     const int copy_size = significand_size - ipart_digits;
                     CharTraits::copy(it, significand + ipart_digits, copy_size);
 
@@ -339,9 +330,7 @@ namespace usf {
                 *it++ = *significand;
 
                 if (precision > 0 || format.hash()) {
-#ifdef ORIGINAL
                   *it++ = '.';
-#endif
                   const int copy_size = significand_size - 1;
                   CharTraits::copy(it, significand + 1, copy_size);
                   CharTraits::assign(it, '0', precision - copy_size);
