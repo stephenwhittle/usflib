@@ -114,8 +114,8 @@ namespace usf {
       // PRIVATE STATIC FUNCTIONS
       // --------------------------------------------------------------------
 
-      static USF_CPP14_CONSTEXPR void format_bool(iterator &it, iterator end,
-                                                  const Format &format, const bool value) {
+      static constexpr void format_bool(iterator &it, iterator end,
+                                        const Format &format, const bool value) {
         if (format.type_is_none()) {
           format_string(it, end, format, value ? "true" : "false", value ? 4 : 5);
         } else if (format.type_is_integer()) {
@@ -126,8 +126,8 @@ namespace usf {
         }
       }
 
-      static USF_CPP14_CONSTEXPR void format_char(iterator &it, iterator end,
-                                                  Format &format, const CharT value) {
+      static constexpr void format_char(iterator &it, iterator end,
+                                        Format &format, const CharT value) {
         if (format.type_is_none() || format.type_is_char()) {
           // Characters and strings align to left by default.
           format.default_align_left();
@@ -144,8 +144,8 @@ namespace usf {
       }
 
       template <typename T, typename std::enable_if<std::is_signed<T>::value, bool>::type = true>
-      static USF_CPP14_CONSTEXPR void format_integer(iterator &it, iterator end,
-                                                     const Format &format, const T value) {
+      static constexpr void format_integer(iterator &it, iterator end,
+                                           const Format &format, const T value) {
         using unsigned_type = typename std::make_unsigned<T>::type;
 
         const bool negative = (value < 0);                                          // TODO: This shouldn't be needed with to_chars
@@ -189,8 +189,8 @@ namespace usf {
         CharTraits::assign(it, format.fill_char(), fill_after);
       }
 
-      static USF_CPP14_CONSTEXPR void format_pointer(iterator &it, const_iterator end,
-                                                     const Format &format, const std::uintptr_t value) {
+      static constexpr void format_pointer(iterator &it, const_iterator end,
+                                           const Format &format, const std::uintptr_t value) {
         if (format.type_is_none() || format.type_is_pointer()) {
 #if defined(USF_TARGET_64_BITS)
           const auto ivalue = static_cast<uint64_t>(value);
@@ -210,14 +210,51 @@ namespace usf {
 
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
 
-      static USF_CPP14_CONSTEXPR void format_float(iterator &it, iterator end, const Format &format, double value) {
+      static constexpr void format_float(iterator &it, iterator end, const Format &format, double value) {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_float(), std::runtime_error);
 
-        if (std::isnan(value)) {
-          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
-        } else {
-          const bool negative = std::signbit(value);
+        auto original_start = it;
+        int precision = format.precision();
+        if (precision == -1) precision = 6;
+        if (format.type_is_none() || format.type_is_float_fixed()) {
+          auto [ptr, err] = std::to_chars(it, it + 36, value, std::chars_format::fixed, precision);
+          auto ptr2 = ptr;
+          if (format.type_is_none())
+            while (*(ptr2 - 1) == '0') --ptr2;
+          const auto digits = ptr2 - original_start;  // Count how many digits value has
+          auto fill_after = format.write_alignment(it, end, digits, false);
+          auto [ptr_second, err_second] = std::to_chars(it, it + 36, value, std::chars_format::fixed, precision);
+          ptr2 = ptr_second;
+          if (format.type_is_none())
+            while (*(ptr2 - 1) == '0') --ptr2;
+          it = ptr2;
+          CharTraits::assign(it, format.fill_char(), fill_after);
+        } else if (format.type_is_float_general()) {
+          auto [ptr, err] = std::to_chars(it, it + 36, value, std::chars_format::general, precision);
+          auto ptr2 = ptr;
+          if (format.type_is_none())
+            while (*(ptr2 - 1) == '0') --ptr2;
+          const auto digits = ptr2 - original_start;  // Count how many digits value has
+          auto fill_after = format.write_alignment(it, end, digits, false);
+          auto [ptr_second, err_second] = std::to_chars(it, it + 36, value, std::chars_format::general, precision);
+          ptr2 = ptr_second;
+          if (format.type_is_none())
+            while (*(ptr2 - 1) == '0') --ptr2;
+          it = ptr2;
+          CharTraits::assign(it, format.fill_char(), fill_after);
+        } else if (format.type_is_float_scientific()) {
+          auto [ptr, err] = std::to_chars(it, it + 36, value, std::chars_format::scientific, precision);
+          auto ptr2 = ptr;
+//          while (*(ptr2 - 1) == '0') --ptr2;
+          const auto digits = ptr2 - original_start;  // Count how many digits value has
+          auto fill_after = format.write_alignment(it, end, digits, false);
+          auto [ptr_second, err_second] = std::to_chars(it, it + 36, value, std::chars_format::scientific, precision);
+          ptr2 = ptr_second;
+//          while (*(ptr2 - 1) == '0') --ptr2;
+          it = ptr2;
+          CharTraits::assign(it, format.fill_char(), fill_after);
+        }
 
           if (std::isinf(value)) {
             format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
@@ -349,7 +386,8 @@ namespace usf {
         }
       }
 
-      static USF_CPP14_CONSTEXPR void write_float_exponent(iterator &it, int exponent, const bool uppercase) noexcept {
+      static constexpr void
+      write_float_exponent(iterator &it, int exponent, const bool uppercase) noexcept {
         *it++ = uppercase ? 'E' : 'e';
 
         if (exponent < 0) {
@@ -372,7 +410,7 @@ namespace usf {
         }
       }
 
-      static USF_CPP14_CONSTEXPR void format_float_zero(iterator &it, const_iterator end, const Format &format, const bool negative) {
+      static constexpr void format_float_zero(iterator &it, const_iterator end, const Format &format, const bool negative) {
         int precision = 0;
 
         if (format.type_is_float_fixed() || format.type_is_float_scientific()) {
@@ -406,8 +444,8 @@ namespace usf {
 
 #endif  // !defined(USF_DISABLE_FLOAT_SUPPORT)
 
-      static USF_CPP14_CONSTEXPR void format_string(iterator &it, const_iterator end,
-                                                    Format &format, const std::basic_string_view<CharT> &str) {
+      static constexpr void format_string(iterator &it, const_iterator end,
+                                          Format &format, const std::basic_string_view<CharT> &str) {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_string(), std::runtime_error);
 
@@ -424,9 +462,9 @@ namespace usf {
 
       template <typename CharSrc,
                 typename std::enable_if<std::is_convertible<CharSrc, CharT>::value, bool>::type = true>
-      static USF_CPP14_CONSTEXPR void format_string(iterator &it, const_iterator end,
-                                                    const Format &format, const CharSrc *str,
-                                                    const int str_length, const bool negative = false) {
+      static constexpr void format_string(iterator &it, const_iterator end,
+                                          const Format &format, const CharSrc *str,
+                                          const int str_length, const bool negative = false) {
         const int fill_after = format.write_alignment(it, end, str_length, negative);
 
         CharTraits::copy(it, str, str_length);
@@ -472,73 +510,64 @@ namespace usf {
 
     // Boolean
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const bool arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const bool arg) {
       return arg;
     }
 
     // Character (char)
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const char arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const char arg) {
       return static_cast<CharT>(arg);
     }
 
     // Character (CharT != char)
     template <typename CharT, typename std::enable_if<!std::is_same<CharT, char>::value, bool>::type = true>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const CharT arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const CharT arg) {
       return arg;
     }
 
     // 8 bit signed integer
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const int8_t arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const int8_t arg) {
       return static_cast<int32_t>(arg);
     }
 
     // 8 bit unsigned integer
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const uint8_t arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const uint8_t arg) {
       return static_cast<uint32_t>(arg);
     }
 
     // 16 bit signed integer
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const int16_t arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const int16_t arg) {
       return static_cast<int32_t>(arg);
     }
 
     // 16 bit unsigned integer
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const uint16_t arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const uint16_t arg) {
       return static_cast<uint32_t>(arg);
     }
 
     // 32 bit signed integer
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const int arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const int arg) {
       return static_cast<int32_t>(arg);
     }
 
     // 32 bit unsigned integer
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const unsigned int arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const unsigned int arg) {
       return static_cast<uint32_t>(arg);
     }
 
@@ -546,17 +575,15 @@ namespace usf {
 
     // 32 bit signed integer
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const long int arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const long int arg) {
       return static_cast<int32_t>(arg);
     }
 
     // 32 bit unsigned integer
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const unsigned long int arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const unsigned long int arg) {
       return static_cast<uint32_t>(arg);
     }
 
@@ -564,9 +591,8 @@ namespace usf {
 
     // 64 bit signed integer
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const int64_t arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const int64_t arg) {
       if (arg >= std::numeric_limits<int32_t>::min()
           && arg <= std::numeric_limits<int32_t>::max()) {
         return static_cast<int32_t>(arg);
@@ -577,9 +603,8 @@ namespace usf {
 
     // 64 bit unsigned integer
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const uint64_t arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const uint64_t arg) {
       if (arg <= std::numeric_limits<uint32_t>::max()) {
         return static_cast<uint32_t>(arg);
       }
@@ -589,17 +614,15 @@ namespace usf {
 
     // Pointer (void*)
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(void *arg) {
+    inline constexpr Argument<CharT>
+    make_argument(void *arg) {
       return arg;
     }
 
     // Pointer (const void*)
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(const void *arg) {
+    inline constexpr Argument<CharT>
+    make_argument(const void *arg) {
       return arg;
     }
 
@@ -607,17 +630,15 @@ namespace usf {
 
     // Floating point (float)
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(float arg) {
+    inline constexpr Argument<CharT>
+    make_argument(float arg) {
       return static_cast<double>(arg);
     }
 
     // Floating point (double)
     template <typename CharT>
-    inline USF_CPP14_CONSTEXPR
-        Argument<CharT>
-        make_argument(double arg) {
+    inline constexpr Argument<CharT>
+    make_argument(double arg) {
       return arg;
     }
 
@@ -626,7 +647,7 @@ namespace usf {
     // String (convertible to string view)
     template <typename CharT, typename T,
               typename std::enable_if<std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
-    inline USF_CPP14_CONSTEXPR Argument<CharT> make_argument(const T &arg) {
+    inline constexpr Argument<CharT> make_argument(const T &arg) {
       return std::basic_string_view<CharT>(arg);
     }
 
@@ -643,7 +664,7 @@ namespace usf {
     // User-defined custom type
     template <typename CharT, typename T,
               typename std::enable_if<!std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
-    inline USF_CPP14_CONSTEXPR Argument<CharT> make_argument(const T &arg) {
+    inline constexpr Argument<CharT> make_argument(const T &arg) {
       using _T = typename std::decay<decltype(arg)>::type;
 
       return ArgCustomType<CharT>::template create<_T, &usf::Formatter<CharT, _T>::format_to>(&arg);

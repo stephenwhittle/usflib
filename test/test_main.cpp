@@ -26,10 +26,19 @@ int main(int ac, char* av[]) {
 ////  float num = std::numeric_limits<float>::quiet_NaN();
   std::array<char, 50> str{};
 ////  std::to_chars(str.data(), str.begin() + str.size(), num);
-//  usf::format_to(str, "{:.3f}", 31.4159F);
-  usf::format_to(str, "{:d}", 1435);
+  usf::format_to(str, "{:<14}", 1.234);
+  std::cout << str.data() << '|' << std::endl;
+  usf::format_to(str, "{:>14}", 1.234);
+//  usf::format_to(str, "{:>14}", 1452U);
+  std::cout << str.data() << '|' << std::endl;
+  usf::format_to(str, "{:14}", 1.234);
+  std::cout << str.data() << '|' << std::endl;
+  usf::format_to(str, "{:14f}", 1.234);
+  std::cout << str.data() << '|' << std::endl;
+//  usf::format_to(str, "{:d}", 1435);
 //  usf::format_to(str, "{:x}", 1435);
-  std::cout << str.data() << std::endl;
+//  std::to_chars(str.data(), str.data() + str.size(), 1.234f, std::chars_format::fixed, 3);
+//  usf::format_to(str, "{:14e}", 1.234);
   testing::InitGoogleTest(&ac, av);
   return RUN_ALL_TESTS();
 }
