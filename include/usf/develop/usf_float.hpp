@@ -189,7 +189,7 @@ namespace usf::internal {
     // Evaluates the range [first, last), truncates all the trailing zeros and return the
     // new range size. Keeps always at least 1 element of the range (even if it is zero).
     template <typename CharT>
-    static USF_CPP14_CONSTEXPR int remove_trailing_zeros(const CharT *const first, CharT*& last) noexcept {
+    static USF_CPP14_CONSTEXPR int remove_trailing_zeros(const CharT *const first, CharT* last) noexcept {
       while ((last - 1) > first && *(last - 1) == '0') { --last; }
 
       // Buffer termination is not really necessary since the caller

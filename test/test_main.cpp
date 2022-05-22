@@ -26,7 +26,9 @@ int main(int ac, char* av[]) {
 ////  float num = std::numeric_limits<float>::quiet_NaN();
   std::array<char, 50> str{};
 ////  std::to_chars(str.data(), str.begin() + str.size(), num);
-  usf::format_to(str, "{:.3f}", 31.4159F);
+//  usf::format_to(str, "{:.3f}", 31.4159F);
+  usf::format_to(str, "{:d}", 1435);
+//  usf::format_to(str, "{:x}", 1435);
   std::cout << str.data() << std::endl;
   testing::InitGoogleTest(&ac, av);
   return RUN_ALL_TESTS();

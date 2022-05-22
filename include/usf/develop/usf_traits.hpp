@@ -24,10 +24,16 @@ namespace usf::internal {
     // PUBLIC STATIC FUNCTIONS
     // --------------------------------------------------------------------
 
-    template<typename CharDst, typename CharSrc,
-          typename std::enable_if<std::is_convertible<CharSrc, CharDst>::value, bool>::type = true>
-    USF_ALWAYS_INLINE static USF_CPP14_CONSTEXPR
-    void assign(CharDst *&dst, CharSrc ch, std::ptrdiff_t count) noexcept {
+   /**
+    * @brief Fills in a certain number of fill characters from a starting iterator.
+    * @tparam CharDst The character type of the input string.
+    * @tparam CharSrc The character type of the fill char.
+    * @param dst The string iterator which is the start of where fill characters begin (it will replaced with a fill character).
+    * @param ch The fill character.
+    * @param count The number of sequential fill characters to write.
+    */
+    template<typename CharDst, typename CharSrc, typename std::enable_if<std::is_convertible<CharSrc, CharDst>::value, bool>::type = true>
+    USF_ALWAYS_INLINE static constexpr void assign(CharDst *&dst, CharSrc ch, std::ptrdiff_t count) noexcept {
       while ((count--) > 0) { *dst++ = static_cast<CharDst>(ch); }
     }
 

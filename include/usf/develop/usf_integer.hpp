@@ -75,6 +75,11 @@ namespace usf::internal {
     // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10
     // --------------------- ----------------------------------------------
 
+    /**
+     * @brief Counts how many digits are in an integer number.
+     * @param n The number whose number of digits are being counted.
+     * @returns The number of digits in n.
+     */
     static USF_CPP14_CONSTEXPR int count_digits_dec(const uint32_t n) noexcept {
       if (n < 10) return 1;
 

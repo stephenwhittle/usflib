@@ -62,10 +62,15 @@ namespace usf {
       constexpr Argument(const ArgCustomType<CharT> value) noexcept
           : m_custom(value), m_type_id(TypeId::kCustom) {}
 
-      USF_CPP14_CONSTEXPR void format(std::span<CharT> &dst, Format &format) const {
+      /**
+       * @brief Formats the string according the the format specifier variables.
+       * @param dst The string where the formatted data will be written.
+       * @param format The object which contains all the format data.
+       */
+      constexpr void format(std::span<CharT> &dst, Format &format) const {
         iterator it = dst.begin().base();
 
-        switch (m_type_id) {
+        switch (m_type_id) { // Format it according to its type
           case TypeId::kBool:
             format_bool(it, dst.end().base(), format, m_bool);
             break;
@@ -101,7 +106,7 @@ namespace usf {
             break;
         }
 
-        dst = dst.subspan(static_cast<uint32_t>(it - dst.begin().base()));  // TODO: Sign conversion
+        dst = dst.subspan(static_cast<uint32_t>(it - dst.begin().base()));  // TODO: Sign conversion (WHY)
       }
 
      private:
@@ -109,7 +114,7 @@ namespace usf {
       // PRIVATE STATIC FUNCTIONS
       // --------------------------------------------------------------------
 
-      static USF_CPP14_CONSTEXPR void format_bool(iterator &it, const_iterator end,
+      static USF_CPP14_CONSTEXPR void format_bool(iterator &it, iterator end,
                                                   const Format &format, const bool value) {
         if (format.type_is_none()) {
           format_string(it, end, format, value ? "true" : "false", value ? 4 : 5);
@@ -121,7 +126,7 @@ namespace usf {
         }
       }
 
-      static USF_CPP14_CONSTEXPR void format_char(iterator &it, const_iterator end,
+      static USF_CPP14_CONSTEXPR void format_char(iterator &it, iterator end,
                                                   Format &format, const CharT value) {
         if (format.type_is_none() || format.type_is_char()) {
           // Characters and strings align to left by default.
@@ -139,32 +144,34 @@ namespace usf {
       }
 
       template <typename T, typename std::enable_if<std::is_signed<T>::value, bool>::type = true>
-      static USF_CPP14_CONSTEXPR void format_integer(iterator &it, const_iterator end,
+      static USF_CPP14_CONSTEXPR void format_integer(iterator &it, iterator end,
                                                      const Format &format, const T value) {
         using unsigned_type = typename std::make_unsigned<T>::type;
 
-        const bool negative = (value < 0);
-        const auto uvalue = static_cast<unsigned_type>(negative ? -value : value);
+        const bool negative = (value < 0); // TODO: This shouldn't be needed with to_chars
+        const auto uvalue = static_cast<unsigned_type>(negative ? -value : value); // Get the absolute value
 
         format_integer(it, end, format, uvalue, negative);
       }
 
       template <typename T, typename std::enable_if<std::is_unsigned<T>::value, bool>::type = true>
-      static USF_CPP14_CONSTEXPR void format_integer(iterator &it, const_iterator end, const Format &format,
+      static USF_CPP14_CONSTEXPR void format_integer(iterator &it, iterator end, const Format &format,
                                                      const T value, const bool negative = false) {
-        int fill_after = 0;
+        int fill_after = 0; //
 
-        if (format.type_is_none() || format.type_is_integer_dec()) {
-          const auto digits = Integer::count_digits_dec(value);
+        if (format.type_is_none() || format.type_is_integer_dec()) { // If there is no specified format or base 10
+          const auto digits = Integer::count_digits_dec(value); // Count how many digits value has
           fill_after = format.write_alignment(it, end, digits, negative);
-          it += digits;
-          Integer::convert_dec(it, value);
-        } else if (format.type_is_integer_hex()) {
+//          it += digits; // Offset the iterator by the numbe of digits
+          auto [ptr, err] = std::to_chars(it, it + digits, value); // TODO: Is it + digits always correct?
+          it = ptr;
+//          Integer::convert_dec(it, value); // This function writes the number from right to left, which is why the iterator was advanced by the number of digits
+        } else if (format.type_is_integer_hex()) { // If it is hex format
           const auto digits = Integer::count_digits_hex(value);
           fill_after = format.write_alignment(it, end, digits, negative);
           it += digits;
           Integer::convert_hex(it, value, format.uppercase());
-        } else if (format.type_is_integer_oct()) {
+        } else if (format.type_is_integer_oct()) { // If it is octal
           const auto digits = Integer::count_digits_oct(value);
           fill_after = format.write_alignment(it, end, digits, negative);
           it += digits;

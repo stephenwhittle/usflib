@@ -55,14 +55,14 @@ namespace usf {
       parse_format_string(str, fmt);
 
       while (!fmt.empty()) {
-        ArgFormat<CharT> format(fmt, arg_count);
+        ArgFormat<CharT> format(fmt, arg_count); // Parse the format specifier and generate a format object
 
         // Determine which argument index to use, sequential or positional.
         int arg_index = format.index();
 
-        if (arg_index < 0) {
+        if (arg_index < 0) { // If it is sequential (arg_index == -1)
           USF_ENFORCE(arg_seq_index < arg_count, std::runtime_error);
-          arg_index = arg_seq_index++;
+          arg_index = arg_seq_index++; // Assign it the next index
         }
 
         args[arg_index].format(str, format);
@@ -100,7 +100,7 @@ namespace usf {
     // Nobody should be that crazy, still... it costs nothing to be sure!
     static_assert(sizeof...(Args) < 128, "usf::basic_format_to(): crazy number of arguments supplied!");
 
-    auto str_begin = str.begin();
+    auto str_begin = str.begin(); // This keeps the start of the string since the str pointer will be incremented throughout the following methods
 
     const internal::Argument<CharT> arguments[sizeof...(Args)]{internal::make_argument<CharT>(args)...};
 
@@ -108,11 +108,11 @@ namespace usf {
 
 #if !defined(USF_DISABLE_STRING_TERMINATION)
     // If not disabled in configuration, null terminate the resulting string.
-    str[0] = CharT{};
+    str[0] = CharT{}; // Since str has been incremented through the above methods, it now resides at the end of the formatted string so the termination can be written directly at it
 #endif
 
     // Return a string span to the resulting string
-    return std::span<CharT>(str_begin, str.begin());
+    return std::span<CharT>(str_begin, str.begin()); // The complete string is now residing between str_begin and str, so return that
   }
 
   template<typename CharT, typename... Args>
