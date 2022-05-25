@@ -35,6 +35,9 @@
 // USF_ABORT_ON_CONTRACT_VIOLATION     : std::abort() will be called (more suitable for embedded platforms, maybe?)
 // USF_THROW_ON_CONTRACT_VIOLATION     : an exception will be thrown
 
+// Configuration of locale support
+// #define USF_DISABLE_LOCALE_SUPPORT
+
 // ----------------------------------------------------------------------------
 // Compiler version detection
 // ----------------------------------------------------------------------------

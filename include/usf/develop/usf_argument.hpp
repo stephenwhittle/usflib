@@ -162,10 +162,10 @@ namespace usf {
         if (format.type_is_none() || format.type_is_integer_dec()) {  // If there is no specified format or base 10
           const auto digits = Integer::count_digits_dec(value);       // Count how many digits value has
           fill_after = format.write_alignment(it, end, digits, negative);
-          //          it += digits; // Offset the iterator by the numbe of digits
-          auto [ptr, err] = std::to_chars(it, it + digits, value);  // TODO: Is it + digits always correct?
-          it = ptr;
-          //          Integer::convert_dec(it, value); // This function writes the number from right to left, which is why the iterator was advanced by the number of digits
+          it += digits;                             // Offset the iterator by the numbe of digits
+                                                    //          auto [ptr, err] = std::to_chars(it, it + digits, value);  // TODO: Is it + digits always correct?
+                                                    //          it = ptr;
+          Integer::convert_dec(it, value);          // This function writes the number from right to left, which is why the iterator was advanced by the number of digits
         } else if (format.type_is_integer_hex()) {  // If it is hex format
           const auto digits = Integer::count_digits_hex(value);
           fill_after = format.write_alignment(it, end, digits, negative);

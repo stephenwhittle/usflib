@@ -105,6 +105,9 @@ if(MSVC)
     add_compiler_flags(/WX)
 endif()
 
+#add_custom_command(TARGET unit_tests POST_BUILD COMMAND cmd //C ../include/single_header_builder.bat)
+#add_custom_command(TARGET unit_tests POST_BUILD COMMAND cmd //C C:/Users/treys/Code/Micro-String-Format/include/single_header_builder.bat)
+
 add_subdirectory(googletest)
 target_include_directories(unit_tests PUBLIC ${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 target_link_libraries(unit_tests PUBLIC gtest gtest_main)
