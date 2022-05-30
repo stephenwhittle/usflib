@@ -1,9 +1,9 @@
 # μSF - Micro String Format
-[![Standard](https://img.shields.io/badge/c%2B%2B-11/14/17-blue.svg)](https://isocpp.org/std/the-standard)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Download](https://img.shields.io/badge/download%20%20-latest-blue.svg)](https://raw.githubusercontent.com/hparracho/usflib/master/include/usf/usf.hpp)
-[![Version](https://img.shields.io/badge/version-0.2.0-brightgreen.svg)](https://github.com/hparracho/usflib/releases)
-[![Build Status](https://travis-ci.org/hparracho/usflib.svg?branch=master)](https://travis-ci.org/hparracho/usflib)
+[![Standard](https://img.shields.io/badge/C%2B%2B-20-C%2B%2B20?logo=c%2B%2B&color=00599C&style=flat)](https://isocpp.org/std/the-standard)
+[![License](https://img.shields.io/github/license/TSprech/Micro-String-Format?label=License&color=A41E34)](https://opensource.org/licenses/MIT)
+[![Download](https://img.shields.io/badge/Download%20%20-latest-blue.svg)](https://raw.githubusercontent.com/hparracho/usflib/master/include/usf/usf.hpp)
+[![Test Status](https://img.shields.io/github/workflow/status/TSprech/Micro-String-Format/CTest?label=Test&logo=githubactions&logoColor=white)]()
+[![Coverage](https://img.shields.io/coveralls/github/TSprech/Micro-String-Format?label=Coverage&logo=coveralls&logoColor=white)]()
 
 μSF is a lean C++ string format library (mainly) for embedded platforms.
 Its main purpose is to be a small, safe and fast alternative to (s)(n)printf functions adding some additional features.
