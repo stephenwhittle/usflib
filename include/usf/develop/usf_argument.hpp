@@ -70,7 +70,7 @@ namespace usf {
        * @param dst The string where the formatted data will be written.
        * @param format The object which contains all the format data.
        */
-      constexpr void format(std::span<CharT> &dst, Format &format, locale_tuple locale = std_locale) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
+      constexpr void format(std::span<CharT> &dst, Format &format, Translatable locale = std_locale) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
 //      constexpr void format(std::span<CharT> &dst, Format &format) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
         iterator it = dst.begin().base();
 
@@ -105,7 +105,11 @@ namespace usf {
             format_string(it, dst.end().base(), format, m_string);
             break;
           case TypeId::kTranslatableString:
-            format_string(it, dst.end().base(), format, m_translatable_string.internal_sv_);
+//            std::cout << typeid(*(locale.translations_.begin() + static_cast<uint16_t>(std::get<0>(locale.current_locale_)))).name() << std::endl;
+//            std::cout << typeid(m_translatable_string.internal_sv_).name() << std::endl;
+//            format_string(it, dst.end().base(), format, m_translatable_string.internal_sv_);
+//            *(locale.translations_.begin() + static_cast<uint16_t>(std::get<0>(locale.current_locale_)))
+            format_string(it, dst.end().base(), format, *(locale.translations_.begin() + static_cast<uint16_t>(std::get<0>(locale.current_locale_))));
             break;
           case TypeId::kCustom:
             USF_ENFORCE(format.is_empty(), std::runtime_error);
@@ -417,7 +421,7 @@ namespace usf {
 #endif  // !defined(USF_DISABLE_FLOAT_SUPPORT)
 
       static constexpr void format_string(iterator &it, const_iterator end,
-                                          Format &format, const std::basic_string_view<CharT> &str) {
+                                          Format &format, auto str) {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_string() || format.type_is_translatable_string(), std::runtime_error);
 

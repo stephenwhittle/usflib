@@ -17,6 +17,11 @@ constexpr auto ja = locale_tuple{
     u8"「"sv,
     u8"」"sv};
 
+constexpr auto da = locale_tuple{
+    Languages::Danish,
+    u8"“"sv,
+    u8"”"sv};
+
 constexpr std::array hello_translated = {
     u8"Hello"sv,      // English
     u8"¿Qué tal?"sv,  // Spanish
@@ -24,11 +29,14 @@ constexpr std::array hello_translated = {
     u8"こんにちは"sv  // Japanese
 };
 
-Translatable translatable(hello_translated, ja);
 
 int main(int ac, char* av[]) {
-  std::array<char8_t, 64> str{};
-  usf::format_to(str, ja, u8"Translated: {}", u8"Hello"_tk);
+Translatable translatable(hello_translated, ja);
+  std::array<char8_t, 256> str{};
+  usf::format_to(str, translatable, u8"Translated: {:t}", u8"Hello"_tk);
+  std::cout << reinterpret_cast<char*>(str.data()) << std::endl;
+  translatable.current_locale_ = da;
+  usf::format_to(str, translatable, u8"Translated: {}", u8"Hello"_tk);
   std::cout << reinterpret_cast<char*>(str.data()) << std::endl;
 
   testing::InitGoogleTest(&ac, av);
