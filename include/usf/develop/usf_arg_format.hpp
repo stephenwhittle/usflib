@@ -50,6 +50,7 @@ namespace usf::internal {
       kFloatScientific,
       kFloatGeneral,
       kString,
+      kTranslatableString,
       kInvalid
     };
 
@@ -205,6 +206,10 @@ namespace usf::internal {
               m_type = Type::kString;
               break;
 
+            case 't':
+              m_type = Type::kTranslatableString;
+              break;
+
             default:  // A character specifier must be found otherwise there is an error
               m_type = Type::kInvalid;
               break;
@@ -315,6 +320,8 @@ namespace usf::internal {
     inline constexpr bool type_is_char() const noexcept { return m_type == Type::kChar; }
 
     inline constexpr bool type_is_string() const noexcept { return m_type == Type::kString; }
+
+    inline constexpr bool type_is_translatable_string() const noexcept { return m_type == Type::kTranslatableString; }
 
     inline constexpr bool type_is_pointer() const noexcept { return m_type == Type::kPointer; }
 

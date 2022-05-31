@@ -4,16 +4,31 @@
 
 #include "gtest/gtest.h"
 
-#include "usf/usf.hpp"
+#include "include/unit_tests_config.hpp"
 
-inline constexpr std::basic_string_view<char8_t>
-operator""_sv8(const char8_t* str, size_t len) noexcept {
-  return std::basic_string_view<char8_t>{str, len};
-}
+enum class Languages : uint16_t {
+  English = 0,
+  Spanish,
+  Danish,
+  Japanese};
+
+constexpr auto ja = locale_tuple{
+    Languages::Japanese,
+    u8"「"sv,
+    u8"」"sv};
+
+constexpr std::array hello_translated = {
+    u8"Hello"sv,      // English
+    u8"¿Qué tal?"sv,  // Spanish
+    u8"Halløj"sv,     // Danish
+    u8"こんにちは"sv  // Japanese
+};
+
+Translatable translatable(hello_translated, ja);
 
 int main(int ac, char* av[]) {
   std::array<char8_t, 64> str{};
-  usf::format_to(str, u8"English: {} Japanese: {}", u8"Hello"_sv8, u8"こんにちは"_sv8);
+  usf::format_to(str, ja, u8"Translated: {}", u8"Hello"_tk);
   std::cout << reinterpret_cast<char*>(str.data()) << std::endl;
 
   testing::InitGoogleTest(&ac, av);

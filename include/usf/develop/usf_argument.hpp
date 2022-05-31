@@ -59,6 +59,9 @@ namespace usf {
       constexpr Argument(const std::basic_string_view<CharT> value) noexcept
           : m_string(value), m_type_id(TypeId::kString) {}
 
+      constexpr Argument(const TranslationKey<CharT> value) noexcept
+          : m_translatable_string(value), m_type_id(TypeId::kTranslatableString) {}
+
       constexpr Argument(const ArgCustomType<CharT> value) noexcept
           : m_custom(value), m_type_id(TypeId::kCustom) {}
 
@@ -67,7 +70,8 @@ namespace usf {
        * @param dst The string where the formatted data will be written.
        * @param format The object which contains all the format data.
        */
-      constexpr void format(std::span<CharT> &dst, Format &format) const {
+      constexpr void format(std::span<CharT> &dst, Format &format, locale_tuple locale = std_locale) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
+//      constexpr void format(std::span<CharT> &dst, Format &format) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
         iterator it = dst.begin().base();
 
         switch (m_type_id) {  // Format it according to its type
@@ -99,6 +103,9 @@ namespace usf {
 #endif
           case TypeId::kString:
             format_string(it, dst.end().base(), format, m_string);
+            break;
+          case TypeId::kTranslatableString:
+            format_string(it, dst.end().base(), format, m_translatable_string.internal_sv_);
             break;
           case TypeId::kCustom:
             USF_ENFORCE(format.is_empty(), std::runtime_error);
@@ -412,7 +419,7 @@ namespace usf {
       static constexpr void format_string(iterator &it, const_iterator end,
                                           Format &format, const std::basic_string_view<CharT> &str) {
         // Test for argument type / format match
-        USF_ENFORCE(format.type_is_none() || format.type_is_string(), std::runtime_error);
+        USF_ENFORCE(format.type_is_none() || format.type_is_string() || format.type_is_translatable_string(), std::runtime_error);
 
         // Characters and strings align to left by default.
         format.default_align_left();
@@ -424,6 +431,20 @@ namespace usf {
 
         format_string(it, end, format, str.data(), str_length);
       }
+
+//      static constexpr void format_translatable_string(iterator &it, const_iterator end, Format &format, const std::basic_string_view<CharT> &str) {
+//        // Test for argument type / format match
+//        USF_ENFORCE(format.type_is_none() || format.type_is_translatable_string(), std::runtime_error);
+//
+//        // Characters and strings align to left by default.
+//        format.default_align_left();
+//
+//        // If precision is specified use it up to string size.
+//        const int str_length = (format.precision() == -1) ? static_cast<int>(str.size()) : std::min(static_cast<int>(format.precision()), static_cast<int>(str.size()));
+//
+//        format_string(it, end, format, str.data(), str_length);
+//      }
+
 
       template <typename CharSrc,
                 typename std::enable_if<std::is_convertible<CharSrc, CharT>::value, bool>::type = true>
@@ -452,6 +473,7 @@ namespace usf {
         kFloat,
 #endif
         kString,
+        kTranslatableString,
         kCustom
       };
 
@@ -467,6 +489,7 @@ namespace usf {
         double m_float;
 #endif
         std::basic_string_view<CharT> m_string;
+        TranslationKey<CharT> m_translatable_string;
         ArgCustomType<CharT> m_custom;
       };
 
@@ -614,6 +637,12 @@ namespace usf {
               typename std::enable_if<std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
     inline constexpr Argument<CharT> make_argument(const T &arg) {
       return std::basic_string_view<CharT>(arg);
+    }
+
+    // Translation key
+    template <typename CharT>
+    inline constexpr Argument<CharT> make_argument(const TranslationKey<CharT>& arg) {
+      return arg;
     }
 
   }  // namespace internal

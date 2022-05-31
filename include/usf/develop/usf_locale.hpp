@@ -8,13 +8,33 @@
 
 #include <array>
 #include <string_view>
+#include <tuple>
+#include <span>
 
-struct Locale {
-};
+using namespace std::string_view_literals;
 
-struct en_US : Locale {
-  static constexpr std::u8string_view decimal;
-  static constexpr std::u8string_view group;
+enum class Languages : uint16_t;
+
+using locale_tuple = std::tuple<Languages, std::u8string_view, std::u8string_view>;
+
+inline locale_tuple std_locale = {static_cast<Languages>(0), u8"."sv, u8","sv}; // TODO: Move
+
+class Translatable {
+ public:
+  explicit Translatable(auto translation, locale_tuple tup)
+      : translations_(translation), current_locale_(tup) {}
+
+  //  auto Locale(locale_tuple&& new_locale) -> void {
+  //    locale = std::get<0>(new_locale);
+  //  }
+
+  auto Translate() -> std::u8string_view {
+    return *(translations_.begin() + static_cast<uint16_t>(std::get<0>(current_locale_)));
+  }
+
+ private:
+  std::span<std::u8string_view> translations_;
+  locale_tuple current_locale_;
 };
 
 #endif

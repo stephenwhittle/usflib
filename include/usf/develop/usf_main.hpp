@@ -107,6 +107,28 @@ namespace usf {
     return std::span<CharT>(str_begin, str.begin());  // The complete string is now residing between str_begin and str, so return that
   }
 
+#ifndef USF_DISABLE_LOCALE_SUPPORT
+  template <typename CharT, typename... Args>
+  constexpr std::span<CharT> basic_format_to(std::span<CharT> str, locale_tuple locale, std::basic_string_view<CharT> fmt, Args &&...args) {
+    // Nobody should be that crazy, still... it costs nothing to be sure!
+    static_assert(sizeof...(Args) < 128, "usf::basic_format_to(): crazy number of arguments supplied!");
+
+    auto str_begin = str.begin();  // This keeps the start of the string since the str pointer will be incremented throughout the following methods
+
+    const internal::Argument<CharT> arguments[sizeof...(Args)]{internal::make_argument<CharT>(args)...};
+
+    internal::process(str, fmt, arguments, static_cast<int>(sizeof...(Args)));
+
+#if !defined(USF_DISABLE_STRING_TERMINATION)
+    // If not disabled in configuration, null terminate the resulting string.
+    str[0] = CharT{};  // Since str has been incremented through the above methods, it now resides at the end of the formatted string so the termination can be written directly at it
+#endif
+
+    // Return a string span to the resulting string
+    return std::span<CharT>(str_begin, str.begin());  // The complete string is now residing between str_begin and str, so return that
+  }
+#endif
+
   template <typename CharT, typename... Args>
   constexpr CharT *
   basic_format_to(CharT *str, const std::ptrdiff_t str_count, std::basic_string_view<CharT> fmt, Args &&...args) {
@@ -143,9 +165,14 @@ namespace usf {
 // Formats a char8_t string
 // ---------------------------------------------------------------------------
 #if defined(USF_CPP20_CHAR8_T_SUPPORT)
+//  template <typename... Args>
+//  constexpr std::span<char8_t> format_to(std::span<char8_t> str, std::u8string_view fmt, Args &&...args) {
+//    return basic_format_to(str, fmt, args...);
+//  }
+
   template <typename... Args>
-  constexpr std::span<char8_t> format_to(std::span<char8_t> str, std::u8string_view fmt, Args &&...args) {
-    return basic_format_to(str, fmt, args...);
+  constexpr std::span<char8_t> format_to(std::span<char8_t> str, locale_tuple locale, std::u8string_view fmt, Args &&...args) {
+    return basic_format_to(str, locale, fmt, args...);
   }
 
   template <typename... Args>
