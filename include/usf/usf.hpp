@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------------------
 // @file    usf.hpp
 // @brief   usflib single header auto generated file.
-// @date    22 May 2022
+// @date    01 June 2022
 // ----------------------------------------------------------------------------
 //
 // μSF - Micro String Format  - https://github.com/hparracho/usflib
@@ -71,6 +71,9 @@
 // USF_ABORT_ON_CONTRACT_VIOLATION     : std::abort() will be called (more suitable for embedded platforms, maybe?)
 // USF_THROW_ON_CONTRACT_VIOLATION     : an exception will be thrown
 
+// Configuration of locale support
+// #define USF_DISABLE_LOCALE_SUPPORT
+
 // ----------------------------------------------------------------------------
 // Compiler version detection
 // ----------------------------------------------------------------------------
@@ -120,15 +123,6 @@
 #error usflib requires compiler and library support \
 for the ISO C++ 2011 standard. This support must be enabled \
 with the -std=c++11 or -std=gnu++11 compiler options.
-#endif
-
-// C++14 features
-#if USF_CPP14_OR_GREATER
-#define constexpr constexpr
-#define constexpr_VAR constexpr
-#else
-#define constexpr
-#define constexpr_VAR const
 #endif
 
 // C++17 features
@@ -842,6 +836,7 @@ namespace usf::internal {
       kFloatScientific,
       kFloatGeneral,
       kString,
+      kTranslatableString,
       kInvalid
     };
 
@@ -997,6 +992,10 @@ namespace usf::internal {
               m_type = Type::kString;
               break;
 
+            case 't':
+              m_type = Type::kTranslatableString;
+              break;
+
             default:  // A character specifier must be found otherwise there is an error
               m_type = Type::kInvalid;
               break;
@@ -1107,6 +1106,8 @@ namespace usf::internal {
     inline constexpr bool type_is_char() const noexcept { return m_type == Type::kChar; }
 
     inline constexpr bool type_is_string() const noexcept { return m_type == Type::kString; }
+
+    inline constexpr bool type_is_translatable_string() const noexcept { return m_type == Type::kTranslatableString; }
 
     inline constexpr bool type_is_pointer() const noexcept { return m_type == Type::kPointer; }
 
@@ -1418,6 +1419,9 @@ namespace usf {
       constexpr Argument(const std::basic_string_view<CharT> value) noexcept
           : m_string(value), m_type_id(TypeId::kString) {}
 
+      constexpr Argument(const std::span<const std::basic_string_view<CharT>> value) noexcept
+          : m_translatable_string(value), m_type_id(TypeId::kTranslatableString) {}
+
       constexpr Argument(const ArgCustomType<CharT> value) noexcept
           : m_custom(value), m_type_id(TypeId::kCustom) {}
 
@@ -1426,7 +1430,8 @@ namespace usf {
        * @param dst The string where the formatted data will be written.
        * @param format The object which contains all the format data.
        */
-      constexpr void format(std::span<CharT> &dst, Format &format) const {
+      constexpr void format(std::span<CharT> &dst, Format &format, locale_t locale = std_locale) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
+//      constexpr void format(std::span<CharT> &dst, Format &format) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
         iterator it = dst.begin().base();
 
         switch (m_type_id) {  // Format it according to its type
@@ -1458,6 +1463,9 @@ namespace usf {
 #endif
           case TypeId::kString:
             format_string(it, dst.end().base(), format, m_string);
+            break;
+          case TypeId::kTranslatableString:
+            format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(std::get<0>(locale))));
             break;
           case TypeId::kCustom:
             USF_ENFORCE(format.is_empty(), std::runtime_error);
@@ -1769,9 +1777,9 @@ namespace usf {
 #endif  // !defined(USF_DISABLE_FLOAT_SUPPORT)
 
       static constexpr void format_string(iterator &it, const_iterator end,
-                                          Format &format, const std::basic_string_view<CharT> &str) {
+                                          Format &format, auto str) {
         // Test for argument type / format match
-        USF_ENFORCE(format.type_is_none() || format.type_is_string(), std::runtime_error);
+        USF_ENFORCE(format.type_is_none() || format.type_is_string() || format.type_is_translatable_string(), std::runtime_error);
 
         // Characters and strings align to left by default.
         format.default_align_left();
@@ -1783,6 +1791,20 @@ namespace usf {
 
         format_string(it, end, format, str.data(), str_length);
       }
+
+//      static constexpr void format_translatable_string(iterator &it, const_iterator end, Format &format, const std::basic_string_view<CharT> &str) {
+//        // Test for argument type / format match
+//        USF_ENFORCE(format.type_is_none() || format.type_is_translatable_string(), std::runtime_error);
+//
+//        // Characters and strings align to left by default.
+//        format.default_align_left();
+//
+//        // If precision is specified use it up to string size.
+//        const int str_length = (format.precision() == -1) ? static_cast<int>(str.size()) : std::min(static_cast<int>(format.precision()), static_cast<int>(str.size()));
+//
+//        format_string(it, end, format, str.data(), str_length);
+//      }
+
 
       template <typename CharSrc,
                 typename std::enable_if<std::is_convertible<CharSrc, CharT>::value, bool>::type = true>
@@ -1811,6 +1833,7 @@ namespace usf {
         kFloat,
 #endif
         kString,
+        kTranslatableString,
         kCustom
       };
 
@@ -1826,6 +1849,7 @@ namespace usf {
         double m_float;
 #endif
         std::basic_string_view<CharT> m_string;
+        std::span<const std::basic_string_view<CharT>> m_translatable_string;
         ArgCustomType<CharT> m_custom;
       };
 
@@ -1975,6 +1999,12 @@ namespace usf {
       return std::basic_string_view<CharT>(arg);
     }
 
+    // Translation key
+    template <typename CharT>
+    inline constexpr Argument<CharT> make_argument(const std::span<const std::basic_string_view<CharT>>& arg) {
+      return arg;
+    }
+
   }  // namespace internal
 
   // User-defined custom type formatter forward declaration
@@ -2046,7 +2076,7 @@ namespace usf {
 
     template <typename CharT>
     constexpr void process(std::span<CharT> &str, std::basic_string_view<CharT> &fmt,
-                           const Argument<CharT> *const args, const int arg_count) {
+                           const Argument<CharT> *const args, const int arg_count, locale_t locale = std_locale) {
       // Argument's sequential index
       int arg_seq_index = 0;
 
@@ -2063,7 +2093,7 @@ namespace usf {
           arg_index = arg_seq_index++;  // Assign it the next index
         }
 
-        args[arg_index].format(str, format);
+        args[arg_index].format(str, format, locale);
 
         parse_format_string(str, fmt);
       }
@@ -2108,6 +2138,28 @@ namespace usf {
     return std::span<CharT>(str_begin, str.begin());  // The complete string is now residing between str_begin and str, so return that
   }
 
+#ifndef USF_DISABLE_LOCALE_SUPPORT
+  template <typename CharT, typename... Args>
+  constexpr std::span<CharT> basic_format_to(std::span<CharT> str, locale_t locale, std::basic_string_view<CharT> fmt, Args &&...args) {
+    // Nobody should be that crazy, still... it costs nothing to be sure!
+    static_assert(sizeof...(Args) < 128, "usf::basic_format_to(): crazy number of arguments supplied!");
+
+    auto str_begin = str.begin();  // This keeps the start of the string since the str pointer will be incremented throughout the following methods
+
+    const internal::Argument<CharT> arguments[sizeof...(Args)]{internal::make_argument<CharT>(args)...};
+
+    internal::process(str, fmt, arguments, static_cast<int>(sizeof...(Args)), locale);
+
+#if !defined(USF_DISABLE_STRING_TERMINATION)
+    // If not disabled in configuration, null terminate the resulting string.
+    str[0] = CharT{};  // Since str has been incremented through the above methods, it now resides at the end of the formatted string so the termination can be written directly at it
+#endif
+
+    // Return a string span to the resulting string
+    return std::span<CharT>(str_begin, str.begin());  // The complete string is now residing between str_begin and str, so return that
+  }
+#endif
+
   template <typename CharT, typename... Args>
   constexpr CharT *
   basic_format_to(CharT *str, const std::ptrdiff_t str_count, std::basic_string_view<CharT> fmt, Args &&...args) {
@@ -2144,9 +2196,14 @@ namespace usf {
 // Formats a char8_t string
 // ---------------------------------------------------------------------------
 #if defined(USF_CPP20_CHAR8_T_SUPPORT)
+//  template <typename... Args>
+//  constexpr std::span<char8_t> format_to(std::span<char8_t> str, std::u8string_view fmt, Args &&...args) {
+//    return basic_format_to(str, fmt, args...);
+//  }
+
   template <typename... Args>
-  constexpr std::span<char8_t> format_to(std::span<char8_t> str, std::u8string_view fmt, Args &&...args) {
-    return basic_format_to(str, fmt, args...);
+  constexpr std::span<char8_t> format_to(std::span<char8_t> str, locale_t locale, std::u8string_view fmt, Args &&...args) {
+    return basic_format_to(str, locale, fmt, args...);
   }
 
   template <typename... Args>

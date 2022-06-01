@@ -25,16 +25,8 @@ constexpr std::array goodbye_translated = {
 
 constexpr auto ExampleData_map = eternal::translation_map({hello_translated, goodbye_translated});
 
-//struct TranslationArray {
-//  std::span<std::u8string_view> translation_array;
-//};
-
 inline consteval std::span<const std::basic_string_view<char8_t>> operator""_ta(const char8_t* str, size_t len) {
   return ExampleData_map.at(std::u8string_view{str, len});
-}
-
-inline constexpr usf::internal::Argument<char8_t> make_argument(const std::span<const std::basic_string_view<char8_t>>& arg) {
-  return arg;
 }
 
 enum class Languages : uint16_t {
@@ -43,19 +35,15 @@ enum class Languages : uint16_t {
   Danish,
   Japanese};
 
-constexpr auto ja = locale_tuple{
+constexpr auto ja = usf::locale_t {
     Languages::Japanese,
     u8"「"sv,
     u8"」"sv};
 
-constexpr auto da = locale_tuple{
+constexpr auto da = usf::locale_t {
     Languages::Danish,
     u8"“"sv,
     u8"”"sv};
-
-auto test_func(const std::span<const std::u8string_view> test_span) {
-  return test_span;
-}
 
 int main(int ac, char* av[]) {
   static_assert(u8"Hello"_ta[3] ==  u8"こんにちは"sv);
@@ -63,7 +51,7 @@ int main(int ac, char* av[]) {
   std::array<char8_t, 256> str{};
   usf::format_to(str, ja, u8"Translated: {}", u8"Hello"_ta);
   std::cout << reinterpret_cast<char*>(str.data()) << std::endl;
-  usf::format_to(str, da, u8"Translated: {}", u8"Hello"_ta);
+  usf::format_to(str, da, u8"Translated: {:t}", u8"Hello"_ta);
   std::cout << reinterpret_cast<char*>(str.data()) << std::endl;
 
   testing::InitGoogleTest(&ac, av);

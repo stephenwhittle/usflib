@@ -45,7 +45,7 @@ namespace usf {
 
     template <typename CharT>
     constexpr void process(std::span<CharT> &str, std::basic_string_view<CharT> &fmt,
-                           const Argument<CharT> *const args, const int arg_count, locale_tuple locale = std_locale) {
+                           const Argument<CharT> *const args, const int arg_count, locale_t locale = std_locale) {
       // Argument's sequential index
       int arg_seq_index = 0;
 
@@ -109,7 +109,7 @@ namespace usf {
 
 #ifndef USF_DISABLE_LOCALE_SUPPORT
   template <typename CharT, typename... Args>
-  constexpr std::span<CharT> basic_format_to(std::span<CharT> str, locale_tuple locale, std::basic_string_view<CharT> fmt, Args &&...args) {
+  constexpr std::span<CharT> basic_format_to(std::span<CharT> str, locale_t locale, std::basic_string_view<CharT> fmt, Args &&...args) {
     // Nobody should be that crazy, still... it costs nothing to be sure!
     static_assert(sizeof...(Args) < 128, "usf::basic_format_to(): crazy number of arguments supplied!");
 
@@ -171,7 +171,7 @@ namespace usf {
 //  }
 
   template <typename... Args>
-  constexpr std::span<char8_t> format_to(std::span<char8_t> str, locale_tuple locale, std::u8string_view fmt, Args &&...args) {
+  constexpr std::span<char8_t> format_to(std::span<char8_t> str, locale_t locale, std::u8string_view fmt, Args &&...args) {
     return basic_format_to(str, locale, fmt, args...);
   }
 

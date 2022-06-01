@@ -70,8 +70,7 @@ namespace usf {
        * @param dst The string where the formatted data will be written.
        * @param format The object which contains all the format data.
        */
-      constexpr void format(std::span<CharT> &dst, Format &format, locale_tuple locale = std_locale) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
-//      constexpr void format(std::span<CharT> &dst, Format &format) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
+      constexpr void format(std::span<CharT> &dst, Format &format, locale_t locale = std_locale) const { // std_locale is a locale which defaults to then en_US locale style, this can be customized in the usf_locale file
         iterator it = dst.begin().base();
 
         switch (m_type_id) {  // Format it according to its type
@@ -417,7 +416,7 @@ namespace usf {
 #endif  // !defined(USF_DISABLE_FLOAT_SUPPORT)
 
       static constexpr void format_string(iterator &it, const_iterator end,
-                                          Format &format, auto str) {
+                                          Format &format, std::basic_string_view<CharT> str) {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_string() || format.type_is_translatable_string(), std::runtime_error);
 
