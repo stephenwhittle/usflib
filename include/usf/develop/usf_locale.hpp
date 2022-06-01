@@ -7,24 +7,30 @@
 #ifndef USF_DISABLE_LOCALE_SUPPORT
 
 #include <array>
+#include <span>
 #include <string_view>
 #include <tuple>
-#include <span>
 
 using namespace std::string_view_literals;
 
 enum class Languages : uint16_t;
 
 namespace usf {
-  using locale_t = std::tuple<Languages, std::u8string_view, std::u8string_view>;
+  struct LocaleData {
+    const Languages language;
+    const std::u8string_view start_quote;
+    const std::u8string_view end_quote;
+  };
 
-  constexpr auto c_locale = locale_t{
-      static_cast<Languages>(0),
-      u8"“"sv,
-      u8"”"sv};
+  constexpr LocaleData c_locale {
+      .language = static_cast<Languages>(0),
+      .start_quote = u8"“"sv,
+      .end_quote = u8"”"sv};
+
+  using locale_t = LocaleData;
 
   inline locale_t std_locale = c_locale;
-}
+}  // namespace usf
 
 #endif
 #endif  // USF_LOCALE_HPP

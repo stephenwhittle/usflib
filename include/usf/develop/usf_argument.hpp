@@ -104,7 +104,7 @@ namespace usf {
             format_string(it, dst.end().base(), format, m_string);
             break;
           case TypeId::kTranslatableString:
-            format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(std::get<0>(locale))));
+            format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(locale.language)));
             break;
           case TypeId::kCustom:
             USF_ENFORCE(format.is_empty(), std::runtime_error);

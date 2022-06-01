@@ -35,15 +35,15 @@ enum class Languages : uint16_t {
   Danish,
   Japanese};
 
-constexpr auto ja = usf::locale_t {
-    Languages::Japanese,
-    u8"「"sv,
-    u8"」"sv};
+constexpr usf::locale_t ja {
+    .language = Languages::Japanese,
+    .start_quote = u8"「"sv,
+    .end_quote = u8"」"sv};
 
-constexpr auto da = usf::locale_t {
-    Languages::Danish,
-    u8"“"sv,
-    u8"”"sv};
+constexpr usf::locale_t da {
+    .language = Languages::Danish,
+    .start_quote = u8"“"sv,
+    .end_quote = u8"”"sv};
 
 int main(int ac, char* av[]) {
   static_assert(u8"Hello"_ta[3] ==  u8"こんにちは"sv);
