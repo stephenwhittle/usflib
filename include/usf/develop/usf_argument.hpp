@@ -59,7 +59,7 @@ namespace usf {
       constexpr Argument(const std::basic_string_view<CharT> value) noexcept
           : m_string(value), m_type_id(TypeId::kString) {}
 
-      constexpr Argument(const TranslationKey<CharT> value) noexcept
+      constexpr Argument(const std::span<const std::basic_string_view<CharT>> value) noexcept
           : m_translatable_string(value), m_type_id(TypeId::kTranslatableString) {}
 
       constexpr Argument(const ArgCustomType<CharT> value) noexcept
@@ -70,7 +70,7 @@ namespace usf {
        * @param dst The string where the formatted data will be written.
        * @param format The object which contains all the format data.
        */
-      constexpr void format(std::span<CharT> &dst, Format &format, Translatable locale = std_locale) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
+      constexpr void format(std::span<CharT> &dst, Format &format, locale_tuple locale = std_locale) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
 //      constexpr void format(std::span<CharT> &dst, Format &format) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
         iterator it = dst.begin().base();
 
@@ -105,11 +105,7 @@ namespace usf {
             format_string(it, dst.end().base(), format, m_string);
             break;
           case TypeId::kTranslatableString:
-//            std::cout << typeid(*(locale.translations_.begin() + static_cast<uint16_t>(std::get<0>(locale.current_locale_)))).name() << std::endl;
-//            std::cout << typeid(m_translatable_string.internal_sv_).name() << std::endl;
-//            format_string(it, dst.end().base(), format, m_translatable_string.internal_sv_);
-//            *(locale.translations_.begin() + static_cast<uint16_t>(std::get<0>(locale.current_locale_)))
-            format_string(it, dst.end().base(), format, *(locale.translations_.begin() + static_cast<uint16_t>(std::get<0>(locale.current_locale_))));
+            format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(std::get<0>(locale))));
             break;
           case TypeId::kCustom:
             USF_ENFORCE(format.is_empty(), std::runtime_error);
@@ -493,7 +489,7 @@ namespace usf {
         double m_float;
 #endif
         std::basic_string_view<CharT> m_string;
-        TranslationKey<CharT> m_translatable_string;
+        std::span<const std::basic_string_view<CharT>> m_translatable_string;
         ArgCustomType<CharT> m_custom;
       };
 
@@ -645,7 +641,7 @@ namespace usf {
 
     // Translation key
     template <typename CharT>
-    inline constexpr Argument<CharT> make_argument(const TranslationKey<CharT>& arg) {
+    inline constexpr Argument<CharT> make_argument(const std::span<const std::basic_string_view<CharT>>& arg) {
       return arg;
     }
 

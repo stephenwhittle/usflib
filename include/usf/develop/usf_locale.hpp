@@ -38,11 +38,7 @@ constexpr auto c_locale = locale_tuple{
     u8"「"sv,
     u8"」"sv};
 
-constexpr std::array c_translated = {
-    u8""sv
-};
-
-inline Translatable std_locale(c_translated, c_locale); // TODO: Move
+inline locale_tuple std_locale = c_locale; // TODO: Move
 
 #endif
 #endif  // USF_LOCALE_HPP
