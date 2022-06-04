@@ -6,14 +6,24 @@ set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Og -g -DDEBUG" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DDEBUG" CACHE STRING "" FORCE)
 
-file(GLOB_RECURSE user_source "source/*.cpp" "../include/*.hpp" "include/*.hpp")
+#file(GLOB_RECURSE user_source "source/*.cpp" "../include/*.hpp" "include/*.hpp")
 
-enable_testing()
-add_executable(USFTest ${user_source} test_main.cpp)
+find_program(GCOV_PATH gcov)
+if(NOT GCOV_PATH)
+    message(FATAL_ERROR "Code coverage analysis requires gcov!")
+endif()
+
+set(test_sources
+        source/unit_tests_basic_types.cpp
+        source/unit_tests_custom_types.cpp
+        source/unit_tests_floating_point.cpp
+        source/unit_tests_format_spec.cpp
+        source/unit_tests_positional_args.cpp)
+
+add_executable(USFTest test_main.cpp ${test_sources})
 
 target_include_directories(USFTest PUBLIC ../include) # usflib include directory
 target_include_directories(USFTest PUBLIC include)    # USFTest include directory
-target_include_directories(USFTest PUBLIC googletest/googletest/include)    # USFTest include directory
 
 macro(add_compiler_flags)
     foreach (flag ${ARGV})
@@ -22,7 +32,7 @@ macro(add_compiler_flags)
 endmacro()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compiler_flags(-std=c++17)
+    add_compiler_flags(-std=c++20)
 
     add_compiler_flags(-fstrict-aliasing)
     add_compiler_flags(-fvisibility=hidden)
