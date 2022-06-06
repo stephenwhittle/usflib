@@ -45,7 +45,7 @@ namespace usf {
 
     template <typename CharT>
     constexpr void process(std::span<CharT> &str, std::basic_string_view<CharT> &fmt,
-                           const Argument<CharT> *const args, const int arg_count, locale_t locale = std_locale) {
+                           const Argument<CharT> *const args, const int arg_count, locale_t locale = c_locale) {
       // Argument's sequential index
       int arg_seq_index = 0;
 

@@ -11,25 +11,68 @@
 #include <string_view>
 #include <tuple>
 
+#include "usf_locales_territories.hpp"
+
 using namespace std::string_view_literals;
 
-enum class Languages : uint16_t;
-
 namespace usf {
-  struct LocaleData {
-    const Languages language;
-    const std::u8string_view start_quote;
-    const std::u8string_view end_quote;
+  using cldr_t = std::u8string_view;
+
+  // REQUIRED
+  struct Symbols {
+    cldr_t decimal;
+    cldr_t group;
+    cldr_t list;
+    cldr_t percent_sign;
+    cldr_t plus_sign;
+    cldr_t minus_sign;
+    cldr_t exponential;
+    cldr_t superscripting_exponent;
+    cldr_t per_mille;
+    cldr_t infinity;
+    cldr_t nan;
+    cldr_t time_separator;
   };
 
-  constexpr LocaleData c_locale {
-      .language = static_cast<Languages>(0),
-      .start_quote = u8"“"sv,
-      .end_quote = u8"”"sv};
+  struct Numbers {
+    Symbols symbols;
+  };
 
-  using locale_t = LocaleData;
+  struct Identity {
+    uint8_t revision;
+    Languages language;
+    Territories territory;
+  };
 
-  inline locale_t std_locale = c_locale;
+  struct Locale {
+    Identity identity;
+    Numbers numbers;
+  };
+
+  constexpr Locale c_locale{
+      .identity = {
+          .revision = 41,
+          .language = Languages::en,
+          .territory = Territories::US
+      },
+    .numbers = {
+      .symbols = {
+          .decimal = u8"."sv,
+          .group = u8","sv,
+          .list = u8";"sv,
+          .percent_sign = u8"%"sv,
+          .plus_sign = u8"+"sv,
+          .minus_sign = u8"-"sv,
+          .exponential = u8"E"sv,
+          .superscripting_exponent = u8"×"sv,
+          .per_mille = u8"‰"sv,
+          .infinity = u8"∞"sv,
+          .nan = u8"NaN"sv,
+          .time_separator = u8":"sv}
+    }
+};
+
+using locale_t = Locale;
 }  // namespace usf
 
 #endif

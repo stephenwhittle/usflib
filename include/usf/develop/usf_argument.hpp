@@ -70,7 +70,7 @@ namespace usf {
        * @param dst The string where the formatted data will be written.
        * @param format The object which contains all the format data.
        */
-      constexpr void format(std::span<CharT> &dst, Format &format, locale_t locale = std_locale) const { // std_locale is a locale which defaults to then en_US locale style, this can be customized in the usf_locale file
+      constexpr void format(std::span<CharT> &dst, Format &format, locale_t locale = c_locale) const { // std_locale is a locale which defaults to then en_US locale style, this can be customized in the usf_locale file
         iterator it = dst.begin().base();
 
         switch (m_type_id) {  // Format it according to its type
@@ -104,7 +104,7 @@ namespace usf {
             format_string(it, dst.end().base(), format, m_string);
             break;
           case TypeId::kTranslatableString:
-            format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(locale.language)));
+            format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(locale.identity.language)));
             break;
           case TypeId::kCustom:
             USF_ENFORCE(format.is_empty(), std::runtime_error);
