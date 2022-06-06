@@ -97,7 +97,7 @@ namespace usf {
             break;
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
           case TypeId::kFloat:
-            format_float(it, dst.end().base(), format, m_float);
+            format_float(it, dst.end().base(), format, m_float, locale);
             break;
 #endif
           case TypeId::kString:
@@ -216,17 +216,19 @@ namespace usf {
 
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
 
-      static constexpr void format_float(iterator &it, iterator end, const Format &format, double value) {
+      static constexpr void format_float(iterator &it, iterator end, const Format &format, double value, locale_t locale) {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_float(), std::runtime_error);
 
         if (std::isnan(value)) {
-          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
+//          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
+          format_string(it, end, format, locale.numbers.symbols.nan.data(), locale.numbers.symbols.nan.length());
         } else {
           const bool negative = std::signbit(value);
 
           if (std::isinf(value)) {
-            format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
+//            format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
+            format_string(it, end, format, locale.numbers.symbols.infinity.data(), locale.numbers.symbols.infinity.length(), negative);
           } else {
             if (negative) { value = -value; }
 
@@ -284,7 +286,7 @@ namespace usf {
                   fill_after = format.write_alignment(it, end, full_digits, negative);
 
                   *it++ = '0';
-                  *it++ = '.';
+                  *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]); // TODO: A better way to do this
 
                   int zero_digits = -exponent - 1;
                   CharTraits::assign(it, '0', zero_digits);
@@ -306,7 +308,7 @@ namespace usf {
                     CharTraits::assign(it, '0', ipart_digits - significand_size);
 
                     if (precision > 0 || format.hash()) {
-                      *it++ = '.';
+                      *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
                     }
 
                     if (precision > 0) {
@@ -316,7 +318,7 @@ namespace usf {
                     // SIGNIFICAND[0:x].SIGNIFICAND[x:N]<0>
 
                     CharTraits::copy(it, significand, ipart_digits);
-                    *it++ = '.';
+                    *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
 
                     const int copy_size = significand_size - ipart_digits;
                     CharTraits::copy(it, significand + ipart_digits, copy_size);
@@ -337,7 +339,7 @@ namespace usf {
                 *it++ = *significand;
 
                 if (precision > 0 || format.hash()) {
-                  *it++ = '.';
+                  *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
 
                   const int copy_size = significand_size - 1;
                   CharTraits::copy(it, significand + 1, copy_size);

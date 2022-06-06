@@ -133,13 +133,13 @@ usf::Locale ja_JP {
 
 int main(int ac, char* av[]) {
   std::array<char8_t, 256> str{};
-  usf::format_to(str, ja_JP, u8"Translated: {}", u8"Hello"_ta);
+  usf::format_to(str, ja_JP, u8"Translated: {}, float: {}", u8"Hello"_ta, 3.1415F);
   std::cout << reinterpret_cast<char*>(str.data()) << std::endl;
-  usf::format_to(str, da_DK, u8"Translated: {:t}", u8"Hello"_ta);
+  usf::format_to(str, da_DK, u8"Translated: {:t}, float: {}", u8"Hello"_ta, std::numeric_limits<float>::infinity());
   std::cout << reinterpret_cast<char*>(str.data()) << std::endl;
-  usf::format_to(str, en_US, u8"Translated: {}", u8"Hello"_ta);
+  usf::format_to(str, en_US, u8"Translated: {}, float: {}", u8"Hello"_ta, 3.1415F);
   std::cout << reinterpret_cast<char*>(str.data()) << std::endl;
-  usf::format_to(str, es_ES, u8"Translated: {:t}", u8"Hello"_ta);
+  usf::format_to(str, es_ES, u8"Translated: {:t}, float: {}", u8"Hello"_ta, std::numeric_limits<float>::quiet_NaN());
   std::cout << reinterpret_cast<char*>(str.data()) << std::endl;
 
   testing::InitGoogleTest(&ac, av);
