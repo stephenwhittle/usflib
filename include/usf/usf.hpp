@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------------------
 // @file    usf.hpp
 // @brief   usflib single header auto generated file.
-// @date    01 June 2022
+// @date    07 June 2022
 // ----------------------------------------------------------------------------
 //
 // μSF - Micro String Format  - https://github.com/hparracho/usflib
@@ -306,6 +306,87 @@ namespace usf::internal {
 }  // namespace usf::internal
 
 #endif  // USF_TRAITS_HPP
+
+
+//
+// Created by treys on 5/25/2022.
+//
+
+#ifndef USF_LOCALE_HPP
+#define USF_LOCALE_HPP
+#ifndef USF_DISABLE_LOCALE_SUPPORT
+
+#include <array>
+#include <span>
+#include <string_view>
+#include <tuple>
+
+#include "usf_locales_territories.hpp"
+
+using namespace std::string_view_literals;
+
+namespace usf {
+  using cldr_t = std::u8string_view;
+
+  // REQUIRED
+  struct Symbols {
+    cldr_t decimal;
+    cldr_t group;
+    cldr_t list;
+    cldr_t percent_sign;
+    cldr_t plus_sign;
+    cldr_t minus_sign;
+    cldr_t exponential;
+    cldr_t superscripting_exponent;
+    cldr_t per_mille;
+    cldr_t infinity;
+    cldr_t nan;
+    cldr_t time_separator;
+  };
+
+  struct Numbers {
+    Symbols symbols;
+  };
+
+  struct Identity {
+    uint8_t revision;
+    Languages language;
+    Territories territory;
+  };
+
+  struct Locale {
+    Identity identity;
+    Numbers numbers;
+  };
+
+  constexpr Locale c_locale{
+      .identity = {
+          .revision = 41,
+          .language = Languages::en,
+          .territory = Territories::US
+      },
+    .numbers = {
+      .symbols = {
+          .decimal = u8"."sv,
+          .group = u8","sv,
+          .list = u8";"sv,
+          .percent_sign = u8"%"sv,
+          .plus_sign = u8"+"sv,
+          .minus_sign = u8"-"sv,
+          .exponential = u8"E"sv,
+          .superscripting_exponent = u8"×"sv,
+          .per_mille = u8"‰"sv,
+          .infinity = u8"∞"sv,
+          .nan = u8"NaN"sv,
+          .time_separator = u8":"sv}
+    }
+};
+
+using locale_t = Locale;
+}  // namespace usf
+
+#endif
+#endif  // USF_LOCALE_HPP
 
 
 // ----------------------------------------------------------------------------
@@ -1430,8 +1511,7 @@ namespace usf {
        * @param dst The string where the formatted data will be written.
        * @param format The object which contains all the format data.
        */
-      constexpr void format(std::span<CharT> &dst, Format &format, locale_t locale = std_locale) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
-//      constexpr void format(std::span<CharT> &dst, Format &format) const { // TODO: Have locale be a default parameter which defaults to the standard "C" en locale style
+      constexpr void format(std::span<CharT> &dst, Format &format, locale_t locale = c_locale) const { // std_locale is a locale which defaults to then en_US locale style, this can be customized in the usf_locale file
         iterator it = dst.begin().base();
 
         switch (m_type_id) {  // Format it according to its type
@@ -1458,14 +1538,14 @@ namespace usf {
             break;
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
           case TypeId::kFloat:
-            format_float(it, dst.end().base(), format, m_float);
+            format_float(it, dst.end().base(), format, m_float, locale);
             break;
 #endif
           case TypeId::kString:
             format_string(it, dst.end().base(), format, m_string);
             break;
           case TypeId::kTranslatableString:
-            format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(std::get<0>(locale))));
+            format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(locale.identity.language)));
             break;
           case TypeId::kCustom:
             USF_ENFORCE(format.is_empty(), std::runtime_error);
@@ -1577,17 +1657,19 @@ namespace usf {
 
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
 
-      static constexpr void format_float(iterator &it, iterator end, const Format &format, double value) {
+      static constexpr void format_float(iterator &it, iterator end, const Format &format, double value, locale_t locale) {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_float(), std::runtime_error);
 
         if (std::isnan(value)) {
-          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
+//          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
+          format_string(it, end, format, locale.numbers.symbols.nan.data(), locale.numbers.symbols.nan.length());
         } else {
           const bool negative = std::signbit(value);
 
           if (std::isinf(value)) {
-            format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
+//            format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
+            format_string(it, end, format, locale.numbers.symbols.infinity.data(), locale.numbers.symbols.infinity.length(), negative);
           } else {
             if (negative) { value = -value; }
 
@@ -1645,7 +1727,7 @@ namespace usf {
                   fill_after = format.write_alignment(it, end, full_digits, negative);
 
                   *it++ = '0';
-                  *it++ = '.';
+                  *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]); // TODO: A better way to do this
 
                   int zero_digits = -exponent - 1;
                   CharTraits::assign(it, '0', zero_digits);
@@ -1667,7 +1749,7 @@ namespace usf {
                     CharTraits::assign(it, '0', ipart_digits - significand_size);
 
                     if (precision > 0 || format.hash()) {
-                      *it++ = '.';
+                      *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
                     }
 
                     if (precision > 0) {
@@ -1677,7 +1759,7 @@ namespace usf {
                     // SIGNIFICAND[0:x].SIGNIFICAND[x:N]<0>
 
                     CharTraits::copy(it, significand, ipart_digits);
-                    *it++ = '.';
+                    *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
 
                     const int copy_size = significand_size - ipart_digits;
                     CharTraits::copy(it, significand + ipart_digits, copy_size);
@@ -1698,7 +1780,7 @@ namespace usf {
                 *it++ = *significand;
 
                 if (precision > 0 || format.hash()) {
-                  *it++ = '.';
+                  *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
 
                   const int copy_size = significand_size - 1;
                   CharTraits::copy(it, significand + 1, copy_size);
@@ -1777,7 +1859,7 @@ namespace usf {
 #endif  // !defined(USF_DISABLE_FLOAT_SUPPORT)
 
       static constexpr void format_string(iterator &it, const_iterator end,
-                                          Format &format, auto str) {
+                                          Format &format, std::basic_string_view<CharT> str) {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_string() || format.type_is_translatable_string(), std::runtime_error);
 
@@ -2076,7 +2158,7 @@ namespace usf {
 
     template <typename CharT>
     constexpr void process(std::span<CharT> &str, std::basic_string_view<CharT> &fmt,
-                           const Argument<CharT> *const args, const int arg_count, locale_t locale = std_locale) {
+                           const Argument<CharT> *const args, const int arg_count, locale_t locale = c_locale) {
       // Argument's sequential index
       int arg_seq_index = 0;
 

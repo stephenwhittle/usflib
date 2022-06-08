@@ -5,24 +5,11 @@ using namespace std::literals::string_view_literals;
 //#define USF_DISABLE_FLOAT_SUPPORT
 //#define USF_SINGLE_HEADER
 
-
-// LANGUAGE ENABLE SECTION
-#define USF_ENABLE_LANG_EN
-#define USF_ENABLE_LANG_ES
-#define USF_ENABLE_LANG_DA
-#define USF_ENABLE_LANG_JA
-
-#define USF_ENABLE_TERR_US
-#define USF_ENABLE_TERR_ES
-#define USF_ENABLE_TERR_DK
-#define USF_ENABLE_TERR_JP
-
 #ifdef USF_SINGLE_HEADER
 #include "usf/usf.hpp"
 #else
 // clang-format off
 #include "usf/develop/usf_config.hpp"
-#include "usf/develop/usf_translation_key.hpp"
 #include "usf/develop/usf_locale.hpp"
 #include "usf/develop/usf_traits.hpp"
 #include "usf/develop/usf_integer.hpp"
@@ -31,6 +18,8 @@ using namespace std::literals::string_view_literals;
 #include "usf/develop/usf_arg_custom_type.hpp"
 #include "usf/develop/usf_argument.hpp"
 #include "usf/develop/usf_main.hpp"
+
+#include "eternalAdapted.hpp"
 // clang-format on
 #endif
 

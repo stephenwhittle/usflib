@@ -13,6 +13,19 @@
 
 #include "usf_locales_territories.hpp"
 
+/**
+ * @brief Converts an eternal::translation_map into an array of translation strings.
+ * @param str The string literal which is the key for the translation_map.
+ * @param len The length of the string literal.
+ * @returns The underlying array found using the map key preceding it.
+ */
+// TODO: Make this local to the translation unit using maybe an anonymous namespace?
+// TODO: Wrap in some inline namespaces
+#define USF_TRANSLATION_ARRAY_FUNCTION(MAP_NAME)                                                       \
+  inline consteval std::span<const std::u8string_view> operator""_ta(const char8_t* str, size_t len) { \
+    return MAP_NAME.at(std::u8string_view{str, len});                                                \
+  }
+
 using namespace std::string_view_literals;
 
 namespace usf {
@@ -53,26 +66,10 @@ namespace usf {
       .identity = {
           .revision = 41,
           .language = Languages::en,
-          .territory = Territories::US
-      },
-    .numbers = {
-      .symbols = {
-          .decimal = u8"."sv,
-          .group = u8","sv,
-          .list = u8";"sv,
-          .percent_sign = u8"%"sv,
-          .plus_sign = u8"+"sv,
-          .minus_sign = u8"-"sv,
-          .exponential = u8"E"sv,
-          .superscripting_exponent = u8"×"sv,
-          .per_mille = u8"‰"sv,
-          .infinity = u8"∞"sv,
-          .nan = u8"NaN"sv,
-          .time_separator = u8":"sv}
-    }
-};
+          .territory = Territories::US},
+      .numbers = {.symbols = {.decimal = u8"."sv, .group = u8","sv, .list = u8";"sv, .percent_sign = u8"%"sv, .plus_sign = u8"+"sv, .minus_sign = u8"-"sv, .exponential = u8"E"sv, .superscripting_exponent = u8"×"sv, .per_mille = u8"‰"sv, .infinity = u8"∞"sv, .nan = u8"NaN"sv, .time_separator = u8":"sv}}};
 
-using locale_t = Locale;
+  using locale_t = Locale;
 }  // namespace usf
 
 #endif
