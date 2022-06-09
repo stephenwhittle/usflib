@@ -3,9 +3,8 @@
 //
 
 #include "gtest/gtest.h"
-
-#include "unit_tests_config.hpp"
 #include "sample_locales.hpp"
+#include "unit_tests_config.hpp"
 
 using namespace std::literals::string_view_literals;
 
@@ -26,17 +25,25 @@ constexpr std::array goodbye_translated = {
 
 constexpr auto ExampleData_map = eternal::translation_map({hello_translated, goodbye_translated});
 
-USF_TRANSLATION_ARRAY_FUNCTION(ExampleData_map)
+static_assert(ExampleData_map[u8"Hello"][0] == u8"Hello"); // Make sure the array resolution happens at compile time
 
 TEST(USF, TranslationArray) {
   std::array<char8_t, 256> str{};
-  usf::format_to(str, ja_JP, u8"{}", u8"Hello"_ta); EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"こんにちは"));
-  usf::format_to(str, da_DK, u8"{:t}", u8"Hello"_ta); EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"Halløj"));
-  usf::format_to(str, en_US, u8"{}", u8"Hello"_ta); EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"Hello"));
-  usf::format_to(str, es_ES, u8"{:t}", u8"Hello"_ta); EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"¿Qué tal?"));
+  usf::format_to(str, ja_JP, u8"{}", ExampleData_map[u8"Hello"]);
+  EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"こんにちは"));
+  usf::format_to(str, da_DK, u8"{:t}", ExampleData_map[u8"Hello"]);
+  EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"Halløj"));
+  usf::format_to(str, en_US, u8"{}", ExampleData_map[u8"Hello"]);
+  EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"Hello"));
+  usf::format_to(str, es_ES, u8"{:t}", ExampleData_map[u8"Hello"]);
+  EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"¿Qué tal?"));
 
-  usf::format_to(str, es_ES, u8"{}", u8"Goodbye"_ta); EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"Adiós"));
-  usf::format_to(str, en_US, u8"{:t}", u8"Goodbye"_ta); EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"Goodbye"));
-  usf::format_to(str, da_DK, u8"{}", u8"Goodbye"_ta); EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"Farvel"));
-  usf::format_to(str, ja_JP, u8"{:t}", u8"Goodbye"_ta); EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"さようなら"));
+  usf::format_to(str, es_ES, u8"{}", ExampleData_map[u8"Goodbye"]);
+  EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"Adiós"));
+  usf::format_to(str, en_US, u8"{:t}", ExampleData_map[u8"Goodbye"]);
+  EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"Goodbye"));
+  usf::format_to(str, da_DK, u8"{}", ExampleData_map[u8"Goodbye"]);
+  EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"Farvel"));
+  usf::format_to(str, ja_JP, u8"{:t}", ExampleData_map[u8"Goodbye"]);
+  EXPECT_STREQ(reinterpret_cast<const char*>(str.data()), reinterpret_cast<const char*>(u8"さようなら"));
 }

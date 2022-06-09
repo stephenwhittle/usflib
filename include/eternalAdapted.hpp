@@ -431,6 +431,15 @@ namespace eternal {
       constexpr bool contains(const key_type& key) const noexcept {
         return find(key) != end();
       }
+
+      /**
+       * @brief A specialized operator overload for translation arrays, it resolves a map and key pair into a span for translation.
+       * @param key The u8 literal or u8 sv literal that is the first entry in the translation array.
+       * @returns A span on the translation array.
+       */
+      constexpr std::span<const std::u8string_view> operator[] (key_type key) const {
+        return at(key);
+      }
     };
   }  // namespace impl
 

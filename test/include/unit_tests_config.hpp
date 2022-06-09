@@ -1,3 +1,6 @@
+#ifndef UNIT_TESTS_CONFIG
+#define UNIT_TESTS_CONFIG
+
 #include "gtest/gtest.h"
 using namespace std::literals::string_view_literals;
 
@@ -38,3 +41,5 @@ using namespace std::literals::string_view_literals;
 
 #include <ctime>
 #include <iostream>
+
+#endif // UNIT_TESTS_CONFIG

@@ -13,18 +13,19 @@
 
 #include "usf_locales_territories.hpp"
 
-/**
- * @brief Converts an eternal::translation_map into an array of translation strings.
- * @param str The string literal which is the key for the translation_map.
- * @param len The length of the string literal.
- * @returns The underlying array found using the map key preceding it.
- */
-// TODO: Make this local to the translation unit using maybe an anonymous namespace?
-// TODO: Wrap in some inline namespaces
-#define USF_TRANSLATION_ARRAY_FUNCTION(MAP_NAME)                                                       \
-  inline consteval std::span<const std::u8string_view> operator""_ta(const char8_t* str, size_t len) { \
-    return MAP_NAME.at(std::u8string_view{str, len});                                                \
-  }
+///**
+// * @brief Converts an eternal::translation_map into an array of translation strings.
+// * @param str The string literal which is the key for the translation_map.
+// * @param len The length of the string literal.
+// * @returns The underlying array found using the map key preceding it.
+// */
+//// Make this local to the translation unit using maybe an anonymous namespace? Not sure if it should be in macro
+//// Shouldn't need to wrap in inline namespaces since it will be in the anonymous namespace local to the TU by default
+//#define USF_TRANSLATION_ARRAY_FUNCTION(MAP_NAME) \
+//  namespace {                                               \
+//  inline consteval std::span<const std::u8string_view> operator""_ta(const char8_t* str, size_t len) { \
+//    return MAP_NAME.at(std::u8string_view{str, len});                                                \
+//  }}
 
 using namespace std::string_view_literals;
 
