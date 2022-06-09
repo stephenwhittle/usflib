@@ -1,48 +1,40 @@
 # μSF - Micro String Format
 [![Standard](https://img.shields.io/badge/C%2B%2B-20-C%2B%2B20?logo=c%2B%2B&color=00599C&style=flat)](https://isocpp.org/std/the-standard)
+[![Test Status](https://img.shields.io/github/workflow/status/TSprech/Micro-String-Format/CMake?label=Test&logo=githubactions&logoColor=white)](https://github.com/TSprech/Micro-String-Format/actions)
+[![Coverage](https://img.shields.io/coveralls/github/TSprech/Micro-String-Format?label=Coverage&logo=coveralls&logoColor=white)](https://coveralls.io/github/TSprech/Micro-String-Format)
+[![Download](https://img.shields.io/badge/Download%20%20-latest-blue.svg)](https://raw.githubusercontent.com/TSprech/Micro-String-Format/main/include/usf/usf.hpp)
 [![License](https://img.shields.io/github/license/TSprech/Micro-String-Format?label=License&color=A41E34)](https://opensource.org/licenses/MIT)
-[![Download](https://img.shields.io/badge/Download%20%20-latest-blue.svg)](https://raw.githubusercontent.com/hparracho/usflib/master/include/usf/usf.hpp)
-[![Test Status](https://img.shields.io/github/workflow/status/TSprech/Micro-String-Format/CTest?label=Test&logo=githubactions&logoColor=white)]()
-[![Coverage](https://img.shields.io/coveralls/github/TSprech/Micro-String-Format?label=Coverage&logo=coveralls&logoColor=white)]()
 
 μSF is a lean C++ string format library (mainly) for embedded platforms.
 Its main purpose is to be a small, safe and fast alternative to (s)(n)printf functions adding some additional features.
-The library is in its very early stages of development and its interface can (inevitably will) change at any time based on my own usage experience and any feedback / comments I get.
+These additional features include localization and translation lookup support, providing an alternative to STL locale and GNU gettext.
+This library is still in development, however has a majority of functionality ready for use.
 
-## Motivation
-Damn... yet another formatting library???
-Well, basically I have no sympathy for the (s)(n)printf functions, even less for the cumbersome IOStream's interface.
-I really love the [**\{fmt\}**](http://fmtlib.net) library but it has an hefty price tag when working with targets with only a few kB of flash and RAM available.
-This happens mostly because {fmt} has a lot of features (rarely needed in an embedded target) and also because it falls back to printf in some cases (hopefully this is still true in the latest version).
+## Motivation (For This Fork)
+I wanted std::format style formatting for embedded projects. I found hparracho's [usflib](https://github.com/hparracho/usflib) and it seemed like the perfect jumping off point.
+ I have noticed a significant lack of open source, embedded oriented, localization libraries. And when such an opportunity presented itself,
+I figured someone should fill that gap, so here we are.
 
-So, based on my love for the {fmt}'s format string syntax (itself similar to the one of [str.format](https://docs.python.org/3.8/library/string.html) in Python), I decided to roll my own version with a nice balance in mind between code size, execution speed and available features that made sense to my main target platforms, small embedded micro-controllers, mostly ARM Cortex-M0/3/4.
-
-I also did it for the challenge of making it and it turned out to be more demanding than I has expecting at first...
+I think it is clear why an alternative to the antiquated (s)(n)printf is wanted, why the heavy std::iostream library isn't space efficient for embedded, and why the behemoth std::locale is not ideal.
+ However, iostream and locale are only half the localization battle. An embedded equivalent to something like GNU gettext is also needed for translating strings.
 
 ## Features
-- Safe alternative to (s)(n)printf and IOStream functions.
-- Doesn't allocate any dynamic memory.
-- Ease of use: single header file library [usf.hpp](https://raw.githubusercontent.com/hparracho/usflib/master/include/usf/usf.hpp) without any external dependencies.
-- Small code size: both in terms of source code (around 2500 loc) and produced binary size.
-- Reliable: it has an extensive set of [unit tests](https://github.com/hparracho/usflib/tree/master/unit_tests) (*work in progress*).
-- Support for positional arguments.
-- Support for user-defined custom types.
-- Portable and consistent across platforms and compilers.
-- Clean warning-free codebase even with [aggressive](https://github.com/hparracho/usflib/blob/master/unit_tests/CMakeLists.txt#L10) warning levels.
-- Support for  C\+\+11/14/17 standards:
-  - GCC 4.8.1 or greater
-  - Clang 3.4.0 or greater
-  - Should work with MSVC\+\+ 14.0 or greater (*untested yet*)
+- Safe alternative to (s)(n)printf and IOStream functions
+- Doesn't allocate any dynamic memory
+- Ease of use: single header file library [usf.hpp](https://raw.githubusercontent.com/TSprech/Micro-String-Format/main/include/usf/usf.hpp) without any external dependencies
+- Small code size: both in terms of source code and produced binary size
+- Reliable: it has an extensive set of [unit tests](https://raw.githubusercontent.com/TSprech/Micro-String-Format/main/test) (*work in progress*)
+- Support for positional arguments
+- Support for user-defined custom types
+- Portable and consistent across platforms and compilers
+- Clean warning-free codebase even with aggressive warning levels
+- Support for  C\+\+20 standard, in the future compatability with C\+\+11/14/17 may be added back once localization support is completed
 
 #### Roadmap - upcoming features
-- Complete unit tests.
-- IAR and Arm Compiler 5/6 support.
-- Dynamic width and precision support.
-- Add a std::string replacement with inplace storage.
-- Add more functions to usf::StringSpan and usf::StringView classes. 
-- Besides formatting, also printing capability with custom output handler, e.g.: Console, UARTs, LCDs, etc...
-- Wide character strings support (the foundations are done but it was never used or tested).
-- Better floating point conversion routines (the current ones suck!). Looking at the possibility of adapting [ryu](https://github.com/ulfjack/ryu)'s algorithm.
+- Number localization support
+- Complete unit tests
+- Dynamic width and precision support
+- Better floating point conversion routine. Looking at the possibility of adapting [ryu](https://github.com/ulfjack/ryu)'s algorithm
 
 ## Benchmarks
 (*wip*)
@@ -112,4 +104,6 @@ usf::StringSpan usf::format_to(usf::StringSpan str, usf::StringView str_fmt, Arg
 (*wip*)
 
 ## Acknowledgments
-(*wip*)
+hparracho's original library: [usflib](https://github.com/hparracho/usflib)
+
+mapbox's constexpr map library: [eternal](https://github.com/mapbox/eternal)
