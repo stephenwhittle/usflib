@@ -45,7 +45,7 @@ namespace usf {
 
     template <typename CharT>
     constexpr void process(std::span<CharT> &str, std::basic_string_view<CharT> &fmt,
-                           const Argument<CharT> *const args, const int arg_count) {
+                           const Argument<CharT> *const args, const int arg_count, locale_t locale = c_locale) {
       // Argument's sequential index
       int arg_seq_index = 0;
 
@@ -62,7 +62,7 @@ namespace usf {
           arg_index = arg_seq_index++;  // Assign it the next index
         }
 
-        args[arg_index].format(str, format);
+        args[arg_index].format(str, format, locale);
 
         parse_format_string(str, fmt);
       }
@@ -107,6 +107,28 @@ namespace usf {
     return std::span<CharT>(str_begin, str.begin());  // The complete string is now residing between str_begin and str, so return that
   }
 
+#ifndef USF_DISABLE_LOCALE_SUPPORT
+  template <typename CharT, typename... Args>
+  constexpr std::span<CharT> basic_format_to(std::span<CharT> str, locale_t locale, std::basic_string_view<CharT> fmt, Args &&...args) {
+    // Nobody should be that crazy, still... it costs nothing to be sure!
+    static_assert(sizeof...(Args) < 128, "usf::basic_format_to(): crazy number of arguments supplied!");
+
+    auto str_begin = str.begin();  // This keeps the start of the string since the str pointer will be incremented throughout the following methods
+
+    const internal::Argument<CharT> arguments[sizeof...(Args)]{internal::make_argument<CharT>(args)...};
+
+    internal::process(str, fmt, arguments, static_cast<int>(sizeof...(Args)), locale);
+
+#if !defined(USF_DISABLE_STRING_TERMINATION)
+    // If not disabled in configuration, null terminate the resulting string.
+    str[0] = CharT{};  // Since str has been incremented through the above methods, it now resides at the end of the formatted string so the termination can be written directly at it
+#endif
+
+    // Return a string span to the resulting string
+    return std::span<CharT>(str_begin, str.begin());  // The complete string is now residing between str_begin and str, so return that
+  }
+#endif
+
   template <typename CharT, typename... Args>
   constexpr CharT *
   basic_format_to(CharT *str, const std::ptrdiff_t str_count, std::basic_string_view<CharT> fmt, Args &&...args) {
@@ -121,92 +143,87 @@ namespace usf {
     return basic_format_to(str, fmt, args...);
   }
 
-  //  template<typename... Args>
-  //  constexpr
-  //  char *format_to(char *str, const std::ptrdiff_t str_count, std::string_view fmt, Args &&... args) {
-  //    return basic_format_to(str, str_count, fmt, args...);
+  template <typename... Args>
+  constexpr char *format_to(char *str, const std::ptrdiff_t str_count, std::string_view fmt, Args &&...args) {
+    return basic_format_to(str, str_count, fmt, args...);
+  }
+
+  // ----------------------------------------------------------------------------
+  // Formats a wchar_t string
+  // ---------------------------------------------------------------------------
+  template <typename... Args>
+  constexpr std::span<wchar_t> format_to(std::span<wchar_t> str, std::wstring_view fmt, Args &&...args) {
+    return basic_format_to(str, fmt, args...);
+  }
+
+  template <typename... Args>
+  constexpr wchar_t *format_to(wchar_t *str, const std::ptrdiff_t str_count, std::wstring_view fmt, Args &&...args) {
+    return basic_format_to(str, str_count, fmt, args...);
+  }
+
+// ----------------------------------------------------------------------------
+// Formats a char8_t string
+// ---------------------------------------------------------------------------
+#if defined(USF_CPP20_CHAR8_T_SUPPORT)
+//  template <typename... Args>
+//  constexpr std::span<char8_t> format_to(std::span<char8_t> str, std::u8string_view fmt, Args &&...args) {
+//    return basic_format_to(str, fmt, args...);
+//  }
+
+  template <typename... Args>
+  constexpr std::span<char8_t> format_to(std::span<char8_t> str, locale_t locale, std::u8string_view fmt, Args &&...args) {
+    return basic_format_to(str, locale, fmt, args...);
+  }
+
+  template <typename... Args>
+  constexpr char8_t *format_to(char8_t *str, const std::ptrdiff_t str_count, char8_t fmt, Args &&...args) {
+    return basic_format_to(str, str_count, fmt, args...);
+  }
+#endif  // defined(USF_CPP20_CHAR8_T_SUPPORT)
+
+  // ----------------------------------------------------------------------------
+  // Formats a char16_t string
+  // ---------------------------------------------------------------------------
+  template <typename... Args>
+  constexpr std::span<char16_t> format_to(std::span<char16_t> str, std::u16string_view fmt, Args &&...args) {
+    return basic_format_to(str, fmt, args...);
+  }
+
+  template <typename... Args>
+  constexpr char16_t *format_to(char16_t *str, const std::ptrdiff_t str_count, std::u16string_view fmt, Args &&...args) {
+    return basic_format_to(str, str_count, fmt, args...);
+  }
+
+  // ----------------------------------------------------------------------------
+  // Formats a char32_t string
+  // ---------------------------------------------------------------------------
+  template <typename... Args>
+  constexpr std::span<char32_t> format_to(std::span<char32_t> str, std::u32string_view fmt, Args &&...args) {
+    return basic_format_to(str, fmt, args...);
+  }
+
+  template <typename... Args>
+  constexpr char32_t *format_to(char32_t *str, const std::ptrdiff_t str_count, std::u32string_view fmt, Args &&...args) {
+    return basic_format_to(str, str_count, fmt, args...);
+  }
+
+  // ----------------------------------------------------------------------------
+  // Formats a byte string as char string
+  // ----------------------------------------------------------------------------
+  //  template <typename... Args> constexpr
+  //  ByteStringSpan format_to(ByteStringSpan str, StringView fmt, Args&&... args)
+  //  {
+  //      static_assert(CHAR_BIT == 8, "usf::format_to(): invalid char size.");
+  //      char *end = basic_format_to(reinterpret_cast<char*>(str.data()), str.size(), fmt, args...);
+  //
+  //      return ByteStringSpan(str.begin(), reinterpret_cast<uint8_t*>(end));
   //  }
 
-  //// ----------------------------------------------------------------------------
-  //// Formats a wchar_t string
-  //// ---------------------------------------------------------------------------
-  //template <typename... Args> constexpr
-  //WStringSpan format_to(WStringSpan str, WStringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, fmt, args...);
-  //}
-  //
-  //template <typename... Args> constexpr
-  //wchar_t* format_to(wchar_t* str, const std::ptrdiff_t str_count, WStringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, str_count, fmt, args...);
-  //}
-  //
-  //// ----------------------------------------------------------------------------
-  //// Formats a char8_t string
-  //// ---------------------------------------------------------------------------
-  //#if defined(USF_CPP20_CHAR8_T_SUPPORT)
-  //template <typename... Args> constexpr
-  //U8StringSpan format_to(U8StringSpan str, U8StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, fmt, args...);
-  //}
-  //
-  //template <typename... Args> constexpr
-  //char8_t* format_to(char8_t* str, const std::ptrdiff_t str_count, U8StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, str_count, fmt, args...);
-  //}
-  //#endif // defined(USF_CPP20_CHAR8_T_SUPPORT)
-  //
-  //// ----------------------------------------------------------------------------
-  //// Formats a char16_t string
-  //// ---------------------------------------------------------------------------
-  //template <typename... Args> constexpr
-  //U16StringSpan format_to(U16StringSpan str, U16StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, fmt, args...);
-  //}
-  //
-  //template <typename... Args> constexpr
-  //char16_t* format_to(char16_t* str, const std::ptrdiff_t str_count, U16StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, str_count, fmt, args...);
-  //}
-  //
-  //// ----------------------------------------------------------------------------
-  //// Formats a char32_t string
-  //// ---------------------------------------------------------------------------
-  //template <typename... Args> constexpr
-  //U32StringSpan format_to(U32StringSpan str, U32StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, fmt, args...);
-  //}
-  //
-  //template <typename... Args> constexpr
-  //char32_t* format_to(char32_t* str, const std::ptrdiff_t str_count, U32StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, str_count, fmt, args...);
-  //}
-  //
-  //// ----------------------------------------------------------------------------
-  //// Formats a byte string as char string
-  //// ----------------------------------------------------------------------------
-  //template <typename... Args> constexpr
-  //ByteStringSpan format_to(ByteStringSpan str, StringView fmt, Args&&... args)
-  //{
-  //    static_assert(CHAR_BIT == 8, "usf::format_to(): invalid char size.");
-  //    char *end = basic_format_to(reinterpret_cast<char*>(str.data()), str.size(), fmt, args...);
-  //
-  //    return ByteStringSpan(str.begin(), reinterpret_cast<uint8_t*>(end));
-  //}
-  //
-  //template <typename... Args> constexpr
-  //uint8_t* format_to(uint8_t* str, const std::ptrdiff_t str_count, StringView fmt, Args&&... args)
-  //{
-  //    static_assert(CHAR_BIT == 8, "usf::format_to(): invalid char size.");
-  //    return reinterpret_cast<uint8_t*>(basic_format_to(reinterpret_cast<char*>(str), str_count, fmt, args...));
-  //}
+  template <typename... Args>
+  constexpr uint8_t *format_to(uint8_t *str, const std::ptrdiff_t str_count, std::string_view fmt, Args &&...args) {
+    static_assert(CHAR_BIT == 8, "usf::format_to(): invalid char size.");
+    return reinterpret_cast<uint8_t *>(basic_format_to(reinterpret_cast<char *>(str), str_count, fmt, args...));
+  }
 
 }  // namespace usf
 

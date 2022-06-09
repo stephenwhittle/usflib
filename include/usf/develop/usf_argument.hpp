@@ -59,6 +59,9 @@ namespace usf {
       constexpr Argument(const std::basic_string_view<CharT> value) noexcept
           : m_string(value), m_type_id(TypeId::kString) {}
 
+      constexpr Argument(const std::span<const std::basic_string_view<CharT>> value) noexcept
+          : m_translatable_string(value), m_type_id(TypeId::kTranslatableString) {}
+
       constexpr Argument(const ArgCustomType<CharT> value) noexcept
           : m_custom(value), m_type_id(TypeId::kCustom) {}
 
@@ -67,7 +70,7 @@ namespace usf {
        * @param dst The string where the formatted data will be written.
        * @param format The object which contains all the format data.
        */
-      constexpr void format(std::span<CharT> &dst, Format &format) const {
+      constexpr void format(std::span<CharT> &dst, Format &format, locale_t locale = c_locale) const { // std_locale is a locale which defaults to then en_US locale style, this can be customized in the usf_locale file
         iterator it = dst.begin().base();
 
         switch (m_type_id) {  // Format it according to its type
@@ -94,11 +97,14 @@ namespace usf {
             break;
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
           case TypeId::kFloat:
-            format_float(it, dst.end().base(), format, m_float);
+            format_float(it, dst.end().base(), format, m_float, locale);
             break;
 #endif
           case TypeId::kString:
             format_string(it, dst.end().base(), format, m_string);
+            break;
+          case TypeId::kTranslatableString:
+            format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(locale.identity.language)));
             break;
           case TypeId::kCustom:
             USF_ENFORCE(format.is_empty(), std::runtime_error);
@@ -162,10 +168,10 @@ namespace usf {
         if (format.type_is_none() || format.type_is_integer_dec()) {  // If there is no specified format or base 10
           const auto digits = Integer::count_digits_dec(value);       // Count how many digits value has
           fill_after = format.write_alignment(it, end, digits, negative);
-          //          it += digits; // Offset the iterator by the numbe of digits
-          auto [ptr, err] = std::to_chars(it, it + digits, value);  // TODO: Is it + digits always correct?
-          it = ptr;
-          //          Integer::convert_dec(it, value); // This function writes the number from right to left, which is why the iterator was advanced by the number of digits
+          it += digits;                             // Offset the iterator by the numbe of digits
+                                                    //          auto [ptr, err] = std::to_chars(it, it + digits, value);  // TODO: Is it + digits always correct?
+                                                    //          it = ptr;
+          Integer::convert_dec(it, value);          // This function writes the number from right to left, which is why the iterator was advanced by the number of digits
         } else if (format.type_is_integer_hex()) {  // If it is hex format
           const auto digits = Integer::count_digits_hex(value);
           fill_after = format.write_alignment(it, end, digits, negative);
@@ -210,17 +216,19 @@ namespace usf {
 
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
 
-      static constexpr void format_float(iterator &it, iterator end, const Format &format, double value) {
+      static constexpr void format_float(iterator &it, iterator end, const Format &format, double value, locale_t locale) {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_float(), std::runtime_error);
 
         if (std::isnan(value)) {
-          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
+//          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
+          format_string(it, end, format, locale.numbers.symbols.nan.data(), locale.numbers.symbols.nan.length());
         } else {
           const bool negative = std::signbit(value);
 
           if (std::isinf(value)) {
-            format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
+//            format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
+            format_string(it, end, format, locale.numbers.symbols.infinity.data(), locale.numbers.symbols.infinity.length(), negative);
           } else {
             if (negative) { value = -value; }
 
@@ -278,7 +286,7 @@ namespace usf {
                   fill_after = format.write_alignment(it, end, full_digits, negative);
 
                   *it++ = '0';
-                  *it++ = '.';
+                  *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]); // TODO: A better way to do this
 
                   int zero_digits = -exponent - 1;
                   CharTraits::assign(it, '0', zero_digits);
@@ -300,7 +308,7 @@ namespace usf {
                     CharTraits::assign(it, '0', ipart_digits - significand_size);
 
                     if (precision > 0 || format.hash()) {
-                      *it++ = '.';
+                      *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
                     }
 
                     if (precision > 0) {
@@ -310,7 +318,7 @@ namespace usf {
                     // SIGNIFICAND[0:x].SIGNIFICAND[x:N]<0>
 
                     CharTraits::copy(it, significand, ipart_digits);
-                    *it++ = '.';
+                    *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
 
                     const int copy_size = significand_size - ipart_digits;
                     CharTraits::copy(it, significand + ipart_digits, copy_size);
@@ -331,7 +339,7 @@ namespace usf {
                 *it++ = *significand;
 
                 if (precision > 0 || format.hash()) {
-                  *it++ = '.';
+                  *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
 
                   const int copy_size = significand_size - 1;
                   CharTraits::copy(it, significand + 1, copy_size);
@@ -410,9 +418,9 @@ namespace usf {
 #endif  // !defined(USF_DISABLE_FLOAT_SUPPORT)
 
       static constexpr void format_string(iterator &it, const_iterator end,
-                                          Format &format, const std::basic_string_view<CharT> &str) {
+                                          Format &format, std::basic_string_view<CharT> str) {
         // Test for argument type / format match
-        USF_ENFORCE(format.type_is_none() || format.type_is_string(), std::runtime_error);
+        USF_ENFORCE(format.type_is_none() || format.type_is_string() || format.type_is_translatable_string(), std::runtime_error);
 
         // Characters and strings align to left by default.
         format.default_align_left();
@@ -424,6 +432,20 @@ namespace usf {
 
         format_string(it, end, format, str.data(), str_length);
       }
+
+//      static constexpr void format_translatable_string(iterator &it, const_iterator end, Format &format, const std::basic_string_view<CharT> &str) {
+//        // Test for argument type / format match
+//        USF_ENFORCE(format.type_is_none() || format.type_is_translatable_string(), std::runtime_error);
+//
+//        // Characters and strings align to left by default.
+//        format.default_align_left();
+//
+//        // If precision is specified use it up to string size.
+//        const int str_length = (format.precision() == -1) ? static_cast<int>(str.size()) : std::min(static_cast<int>(format.precision()), static_cast<int>(str.size()));
+//
+//        format_string(it, end, format, str.data(), str_length);
+//      }
+
 
       template <typename CharSrc,
                 typename std::enable_if<std::is_convertible<CharSrc, CharT>::value, bool>::type = true>
@@ -452,6 +474,7 @@ namespace usf {
         kFloat,
 #endif
         kString,
+        kTranslatableString,
         kCustom
       };
 
@@ -467,6 +490,7 @@ namespace usf {
         double m_float;
 #endif
         std::basic_string_view<CharT> m_string;
+        std::span<const std::basic_string_view<CharT>> m_translatable_string;
         ArgCustomType<CharT> m_custom;
       };
 
@@ -614,6 +638,12 @@ namespace usf {
               typename std::enable_if<std::is_convertible<T, std::basic_string_view<CharT>>::value, bool>::type = true>
     inline constexpr Argument<CharT> make_argument(const T &arg) {
       return std::basic_string_view<CharT>(arg);
+    }
+
+    // Translation key
+    template <typename CharT>
+    inline constexpr Argument<CharT> make_argument(const std::span<const std::basic_string_view<CharT>>& arg) {
+      return arg;
     }
 
   }  // namespace internal

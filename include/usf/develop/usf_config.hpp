@@ -35,6 +35,9 @@
 // USF_ABORT_ON_CONTRACT_VIOLATION     : std::abort() will be called (more suitable for embedded platforms, maybe?)
 // USF_THROW_ON_CONTRACT_VIOLATION     : an exception will be thrown
 
+// Configuration of locale support
+// #define USF_DISABLE_LOCALE_SUPPORT
+
 // ----------------------------------------------------------------------------
 // Compiler version detection
 // ----------------------------------------------------------------------------
@@ -84,15 +87,6 @@
 #error usflib requires compiler and library support \
 for the ISO C++ 2011 standard. This support must be enabled \
 with the -std=c++11 or -std=gnu++11 compiler options.
-#endif
-
-// C++14 features
-#if USF_CPP14_OR_GREATER
-#define constexpr constexpr
-#define constexpr_VAR constexpr
-#else
-#define constexpr
-#define constexpr_VAR const
 #endif
 
 // C++17 features

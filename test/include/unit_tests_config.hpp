@@ -1,3 +1,6 @@
+#ifndef UNIT_TESTS_CONFIG
+#define UNIT_TESTS_CONFIG
+
 #include "gtest/gtest.h"
 using namespace std::literals::string_view_literals;
 
@@ -10,6 +13,7 @@ using namespace std::literals::string_view_literals;
 #else
 // clang-format off
 #include "usf/develop/usf_config.hpp"
+#include "usf/develop/usf_locale.hpp"
 #include "usf/develop/usf_traits.hpp"
 #include "usf/develop/usf_integer.hpp"
 #include "usf/develop/usf_float.hpp"
@@ -17,6 +21,8 @@ using namespace std::literals::string_view_literals;
 #include "usf/develop/usf_arg_custom_type.hpp"
 #include "usf/develop/usf_argument.hpp"
 #include "usf/develop/usf_main.hpp"
+
+#include "eternalAdapted.hpp"
 // clang-format on
 #endif
 
@@ -35,3 +41,5 @@ using namespace std::literals::string_view_literals;
 
 #include <ctime>
 #include <iostream>
+
+#endif // UNIT_TESTS_CONFIG

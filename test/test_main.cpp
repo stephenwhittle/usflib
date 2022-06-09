@@ -3,6 +3,7 @@
 //
 
 #include "gtest/gtest.h"
+#include "include/unit_tests_config.hpp"
 
 int main(int ac, char* av[]) {
   testing::InitGoogleTest(&ac, av);

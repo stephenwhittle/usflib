@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------------------
 // @file    usf.hpp
 // @brief   usflib single header auto generated file.
-// @date    22 May 2022
+// @date    07 June 2022
 // ----------------------------------------------------------------------------
 //
 // μSF - Micro String Format  - https://github.com/hparracho/usflib
@@ -71,6 +71,9 @@
 // USF_ABORT_ON_CONTRACT_VIOLATION     : std::abort() will be called (more suitable for embedded platforms, maybe?)
 // USF_THROW_ON_CONTRACT_VIOLATION     : an exception will be thrown
 
+// Configuration of locale support
+// #define USF_DISABLE_LOCALE_SUPPORT
+
 // ----------------------------------------------------------------------------
 // Compiler version detection
 // ----------------------------------------------------------------------------
@@ -120,15 +123,6 @@
 #error usflib requires compiler and library support \
 for the ISO C++ 2011 standard. This support must be enabled \
 with the -std=c++11 or -std=gnu++11 compiler options.
-#endif
-
-// C++14 features
-#if USF_CPP14_OR_GREATER
-#define constexpr constexpr
-#define constexpr_VAR constexpr
-#else
-#define constexpr
-#define constexpr_VAR const
 #endif
 
 // C++17 features
@@ -312,6 +306,87 @@ namespace usf::internal {
 }  // namespace usf::internal
 
 #endif  // USF_TRAITS_HPP
+
+
+//
+// Created by treys on 5/25/2022.
+//
+
+#ifndef USF_LOCALE_HPP
+#define USF_LOCALE_HPP
+#ifndef USF_DISABLE_LOCALE_SUPPORT
+
+#include <array>
+#include <span>
+#include <string_view>
+#include <tuple>
+
+#include "usf_locales_territories.hpp"
+
+using namespace std::string_view_literals;
+
+namespace usf {
+  using cldr_t = std::u8string_view;
+
+  // REQUIRED
+  struct Symbols {
+    cldr_t decimal;
+    cldr_t group;
+    cldr_t list;
+    cldr_t percent_sign;
+    cldr_t plus_sign;
+    cldr_t minus_sign;
+    cldr_t exponential;
+    cldr_t superscripting_exponent;
+    cldr_t per_mille;
+    cldr_t infinity;
+    cldr_t nan;
+    cldr_t time_separator;
+  };
+
+  struct Numbers {
+    Symbols symbols;
+  };
+
+  struct Identity {
+    uint8_t revision;
+    Languages language;
+    Territories territory;
+  };
+
+  struct Locale {
+    Identity identity;
+    Numbers numbers;
+  };
+
+  constexpr Locale c_locale{
+      .identity = {
+          .revision = 41,
+          .language = Languages::en,
+          .territory = Territories::US
+      },
+    .numbers = {
+      .symbols = {
+          .decimal = u8"."sv,
+          .group = u8","sv,
+          .list = u8";"sv,
+          .percent_sign = u8"%"sv,
+          .plus_sign = u8"+"sv,
+          .minus_sign = u8"-"sv,
+          .exponential = u8"E"sv,
+          .superscripting_exponent = u8"×"sv,
+          .per_mille = u8"‰"sv,
+          .infinity = u8"∞"sv,
+          .nan = u8"NaN"sv,
+          .time_separator = u8":"sv}
+    }
+};
+
+using locale_t = Locale;
+}  // namespace usf
+
+#endif
+#endif  // USF_LOCALE_HPP
 
 
 // ----------------------------------------------------------------------------
@@ -842,6 +917,7 @@ namespace usf::internal {
       kFloatScientific,
       kFloatGeneral,
       kString,
+      kTranslatableString,
       kInvalid
     };
 
@@ -997,6 +1073,10 @@ namespace usf::internal {
               m_type = Type::kString;
               break;
 
+            case 't':
+              m_type = Type::kTranslatableString;
+              break;
+
             default:  // A character specifier must be found otherwise there is an error
               m_type = Type::kInvalid;
               break;
@@ -1107,6 +1187,8 @@ namespace usf::internal {
     inline constexpr bool type_is_char() const noexcept { return m_type == Type::kChar; }
 
     inline constexpr bool type_is_string() const noexcept { return m_type == Type::kString; }
+
+    inline constexpr bool type_is_translatable_string() const noexcept { return m_type == Type::kTranslatableString; }
 
     inline constexpr bool type_is_pointer() const noexcept { return m_type == Type::kPointer; }
 
@@ -1418,6 +1500,9 @@ namespace usf {
       constexpr Argument(const std::basic_string_view<CharT> value) noexcept
           : m_string(value), m_type_id(TypeId::kString) {}
 
+      constexpr Argument(const std::span<const std::basic_string_view<CharT>> value) noexcept
+          : m_translatable_string(value), m_type_id(TypeId::kTranslatableString) {}
+
       constexpr Argument(const ArgCustomType<CharT> value) noexcept
           : m_custom(value), m_type_id(TypeId::kCustom) {}
 
@@ -1426,7 +1511,7 @@ namespace usf {
        * @param dst The string where the formatted data will be written.
        * @param format The object which contains all the format data.
        */
-      constexpr void format(std::span<CharT> &dst, Format &format) const {
+      constexpr void format(std::span<CharT> &dst, Format &format, locale_t locale = c_locale) const { // std_locale is a locale which defaults to then en_US locale style, this can be customized in the usf_locale file
         iterator it = dst.begin().base();
 
         switch (m_type_id) {  // Format it according to its type
@@ -1453,11 +1538,14 @@ namespace usf {
             break;
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
           case TypeId::kFloat:
-            format_float(it, dst.end().base(), format, m_float);
+            format_float(it, dst.end().base(), format, m_float, locale);
             break;
 #endif
           case TypeId::kString:
             format_string(it, dst.end().base(), format, m_string);
+            break;
+          case TypeId::kTranslatableString:
+            format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(locale.identity.language)));
             break;
           case TypeId::kCustom:
             USF_ENFORCE(format.is_empty(), std::runtime_error);
@@ -1521,10 +1609,10 @@ namespace usf {
         if (format.type_is_none() || format.type_is_integer_dec()) {  // If there is no specified format or base 10
           const auto digits = Integer::count_digits_dec(value);       // Count how many digits value has
           fill_after = format.write_alignment(it, end, digits, negative);
-          //          it += digits; // Offset the iterator by the numbe of digits
-          auto [ptr, err] = std::to_chars(it, it + digits, value);  // TODO: Is it + digits always correct?
-          it = ptr;
-          //          Integer::convert_dec(it, value); // This function writes the number from right to left, which is why the iterator was advanced by the number of digits
+          it += digits;                             // Offset the iterator by the numbe of digits
+                                                    //          auto [ptr, err] = std::to_chars(it, it + digits, value);  // TODO: Is it + digits always correct?
+                                                    //          it = ptr;
+          Integer::convert_dec(it, value);          // This function writes the number from right to left, which is why the iterator was advanced by the number of digits
         } else if (format.type_is_integer_hex()) {  // If it is hex format
           const auto digits = Integer::count_digits_hex(value);
           fill_after = format.write_alignment(it, end, digits, negative);
@@ -1569,17 +1657,19 @@ namespace usf {
 
 #if !defined(USF_DISABLE_FLOAT_SUPPORT)
 
-      static constexpr void format_float(iterator &it, iterator end, const Format &format, double value) {
+      static constexpr void format_float(iterator &it, iterator end, const Format &format, double value, locale_t locale) {
         // Test for argument type / format match
         USF_ENFORCE(format.type_is_none() || format.type_is_float(), std::runtime_error);
 
         if (std::isnan(value)) {
-          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
+//          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
+          format_string(it, end, format, locale.numbers.symbols.nan.data(), locale.numbers.symbols.nan.length());
         } else {
           const bool negative = std::signbit(value);
 
           if (std::isinf(value)) {
-            format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
+//            format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
+            format_string(it, end, format, locale.numbers.symbols.infinity.data(), locale.numbers.symbols.infinity.length(), negative);
           } else {
             if (negative) { value = -value; }
 
@@ -1637,7 +1727,7 @@ namespace usf {
                   fill_after = format.write_alignment(it, end, full_digits, negative);
 
                   *it++ = '0';
-                  *it++ = '.';
+                  *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]); // TODO: A better way to do this
 
                   int zero_digits = -exponent - 1;
                   CharTraits::assign(it, '0', zero_digits);
@@ -1659,7 +1749,7 @@ namespace usf {
                     CharTraits::assign(it, '0', ipart_digits - significand_size);
 
                     if (precision > 0 || format.hash()) {
-                      *it++ = '.';
+                      *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
                     }
 
                     if (precision > 0) {
@@ -1669,7 +1759,7 @@ namespace usf {
                     // SIGNIFICAND[0:x].SIGNIFICAND[x:N]<0>
 
                     CharTraits::copy(it, significand, ipart_digits);
-                    *it++ = '.';
+                    *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
 
                     const int copy_size = significand_size - ipart_digits;
                     CharTraits::copy(it, significand + ipart_digits, copy_size);
@@ -1690,7 +1780,7 @@ namespace usf {
                 *it++ = *significand;
 
                 if (precision > 0 || format.hash()) {
-                  *it++ = '.';
+                  *it++ = static_cast<char>(locale.numbers.symbols.decimal[0]);
 
                   const int copy_size = significand_size - 1;
                   CharTraits::copy(it, significand + 1, copy_size);
@@ -1769,9 +1859,9 @@ namespace usf {
 #endif  // !defined(USF_DISABLE_FLOAT_SUPPORT)
 
       static constexpr void format_string(iterator &it, const_iterator end,
-                                          Format &format, const std::basic_string_view<CharT> &str) {
+                                          Format &format, std::basic_string_view<CharT> str) {
         // Test for argument type / format match
-        USF_ENFORCE(format.type_is_none() || format.type_is_string(), std::runtime_error);
+        USF_ENFORCE(format.type_is_none() || format.type_is_string() || format.type_is_translatable_string(), std::runtime_error);
 
         // Characters and strings align to left by default.
         format.default_align_left();
@@ -1783,6 +1873,20 @@ namespace usf {
 
         format_string(it, end, format, str.data(), str_length);
       }
+
+//      static constexpr void format_translatable_string(iterator &it, const_iterator end, Format &format, const std::basic_string_view<CharT> &str) {
+//        // Test for argument type / format match
+//        USF_ENFORCE(format.type_is_none() || format.type_is_translatable_string(), std::runtime_error);
+//
+//        // Characters and strings align to left by default.
+//        format.default_align_left();
+//
+//        // If precision is specified use it up to string size.
+//        const int str_length = (format.precision() == -1) ? static_cast<int>(str.size()) : std::min(static_cast<int>(format.precision()), static_cast<int>(str.size()));
+//
+//        format_string(it, end, format, str.data(), str_length);
+//      }
+
 
       template <typename CharSrc,
                 typename std::enable_if<std::is_convertible<CharSrc, CharT>::value, bool>::type = true>
@@ -1811,6 +1915,7 @@ namespace usf {
         kFloat,
 #endif
         kString,
+        kTranslatableString,
         kCustom
       };
 
@@ -1826,6 +1931,7 @@ namespace usf {
         double m_float;
 #endif
         std::basic_string_view<CharT> m_string;
+        std::span<const std::basic_string_view<CharT>> m_translatable_string;
         ArgCustomType<CharT> m_custom;
       };
 
@@ -1975,6 +2081,12 @@ namespace usf {
       return std::basic_string_view<CharT>(arg);
     }
 
+    // Translation key
+    template <typename CharT>
+    inline constexpr Argument<CharT> make_argument(const std::span<const std::basic_string_view<CharT>>& arg) {
+      return arg;
+    }
+
   }  // namespace internal
 
   // User-defined custom type formatter forward declaration
@@ -2046,7 +2158,7 @@ namespace usf {
 
     template <typename CharT>
     constexpr void process(std::span<CharT> &str, std::basic_string_view<CharT> &fmt,
-                           const Argument<CharT> *const args, const int arg_count) {
+                           const Argument<CharT> *const args, const int arg_count, locale_t locale = c_locale) {
       // Argument's sequential index
       int arg_seq_index = 0;
 
@@ -2063,7 +2175,7 @@ namespace usf {
           arg_index = arg_seq_index++;  // Assign it the next index
         }
 
-        args[arg_index].format(str, format);
+        args[arg_index].format(str, format, locale);
 
         parse_format_string(str, fmt);
       }
@@ -2108,6 +2220,28 @@ namespace usf {
     return std::span<CharT>(str_begin, str.begin());  // The complete string is now residing between str_begin and str, so return that
   }
 
+#ifndef USF_DISABLE_LOCALE_SUPPORT
+  template <typename CharT, typename... Args>
+  constexpr std::span<CharT> basic_format_to(std::span<CharT> str, locale_t locale, std::basic_string_view<CharT> fmt, Args &&...args) {
+    // Nobody should be that crazy, still... it costs nothing to be sure!
+    static_assert(sizeof...(Args) < 128, "usf::basic_format_to(): crazy number of arguments supplied!");
+
+    auto str_begin = str.begin();  // This keeps the start of the string since the str pointer will be incremented throughout the following methods
+
+    const internal::Argument<CharT> arguments[sizeof...(Args)]{internal::make_argument<CharT>(args)...};
+
+    internal::process(str, fmt, arguments, static_cast<int>(sizeof...(Args)), locale);
+
+#if !defined(USF_DISABLE_STRING_TERMINATION)
+    // If not disabled in configuration, null terminate the resulting string.
+    str[0] = CharT{};  // Since str has been incremented through the above methods, it now resides at the end of the formatted string so the termination can be written directly at it
+#endif
+
+    // Return a string span to the resulting string
+    return std::span<CharT>(str_begin, str.begin());  // The complete string is now residing between str_begin and str, so return that
+  }
+#endif
+
   template <typename CharT, typename... Args>
   constexpr CharT *
   basic_format_to(CharT *str, const std::ptrdiff_t str_count, std::basic_string_view<CharT> fmt, Args &&...args) {
@@ -2122,92 +2256,87 @@ namespace usf {
     return basic_format_to(str, fmt, args...);
   }
 
-  //  template<typename... Args>
-  //  constexpr
-  //  char *format_to(char *str, const std::ptrdiff_t str_count, std::string_view fmt, Args &&... args) {
-  //    return basic_format_to(str, str_count, fmt, args...);
+  template <typename... Args>
+  constexpr char *format_to(char *str, const std::ptrdiff_t str_count, std::string_view fmt, Args &&...args) {
+    return basic_format_to(str, str_count, fmt, args...);
+  }
+
+  // ----------------------------------------------------------------------------
+  // Formats a wchar_t string
+  // ---------------------------------------------------------------------------
+  template <typename... Args>
+  constexpr std::span<wchar_t> format_to(std::span<wchar_t> str, std::wstring_view fmt, Args &&...args) {
+    return basic_format_to(str, fmt, args...);
+  }
+
+  template <typename... Args>
+  constexpr wchar_t *format_to(wchar_t *str, const std::ptrdiff_t str_count, std::wstring_view fmt, Args &&...args) {
+    return basic_format_to(str, str_count, fmt, args...);
+  }
+
+// ----------------------------------------------------------------------------
+// Formats a char8_t string
+// ---------------------------------------------------------------------------
+#if defined(USF_CPP20_CHAR8_T_SUPPORT)
+//  template <typename... Args>
+//  constexpr std::span<char8_t> format_to(std::span<char8_t> str, std::u8string_view fmt, Args &&...args) {
+//    return basic_format_to(str, fmt, args...);
+//  }
+
+  template <typename... Args>
+  constexpr std::span<char8_t> format_to(std::span<char8_t> str, locale_t locale, std::u8string_view fmt, Args &&...args) {
+    return basic_format_to(str, locale, fmt, args...);
+  }
+
+  template <typename... Args>
+  constexpr char8_t *format_to(char8_t *str, const std::ptrdiff_t str_count, char8_t fmt, Args &&...args) {
+    return basic_format_to(str, str_count, fmt, args...);
+  }
+#endif  // defined(USF_CPP20_CHAR8_T_SUPPORT)
+
+  // ----------------------------------------------------------------------------
+  // Formats a char16_t string
+  // ---------------------------------------------------------------------------
+  template <typename... Args>
+  constexpr std::span<char16_t> format_to(std::span<char16_t> str, std::u16string_view fmt, Args &&...args) {
+    return basic_format_to(str, fmt, args...);
+  }
+
+  template <typename... Args>
+  constexpr char16_t *format_to(char16_t *str, const std::ptrdiff_t str_count, std::u16string_view fmt, Args &&...args) {
+    return basic_format_to(str, str_count, fmt, args...);
+  }
+
+  // ----------------------------------------------------------------------------
+  // Formats a char32_t string
+  // ---------------------------------------------------------------------------
+  template <typename... Args>
+  constexpr std::span<char32_t> format_to(std::span<char32_t> str, std::u32string_view fmt, Args &&...args) {
+    return basic_format_to(str, fmt, args...);
+  }
+
+  template <typename... Args>
+  constexpr char32_t *format_to(char32_t *str, const std::ptrdiff_t str_count, std::u32string_view fmt, Args &&...args) {
+    return basic_format_to(str, str_count, fmt, args...);
+  }
+
+  // ----------------------------------------------------------------------------
+  // Formats a byte string as char string
+  // ----------------------------------------------------------------------------
+  //  template <typename... Args> constexpr
+  //  ByteStringSpan format_to(ByteStringSpan str, StringView fmt, Args&&... args)
+  //  {
+  //      static_assert(CHAR_BIT == 8, "usf::format_to(): invalid char size.");
+  //      char *end = basic_format_to(reinterpret_cast<char*>(str.data()), str.size(), fmt, args...);
+  //
+  //      return ByteStringSpan(str.begin(), reinterpret_cast<uint8_t*>(end));
   //  }
 
-  //// ----------------------------------------------------------------------------
-  //// Formats a wchar_t string
-  //// ---------------------------------------------------------------------------
-  //template <typename... Args> constexpr
-  //WStringSpan format_to(WStringSpan str, WStringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, fmt, args...);
-  //}
-  //
-  //template <typename... Args> constexpr
-  //wchar_t* format_to(wchar_t* str, const std::ptrdiff_t str_count, WStringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, str_count, fmt, args...);
-  //}
-  //
-  //// ----------------------------------------------------------------------------
-  //// Formats a char8_t string
-  //// ---------------------------------------------------------------------------
-  //#if defined(USF_CPP20_CHAR8_T_SUPPORT)
-  //template <typename... Args> constexpr
-  //U8StringSpan format_to(U8StringSpan str, U8StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, fmt, args...);
-  //}
-  //
-  //template <typename... Args> constexpr
-  //char8_t* format_to(char8_t* str, const std::ptrdiff_t str_count, U8StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, str_count, fmt, args...);
-  //}
-  //#endif // defined(USF_CPP20_CHAR8_T_SUPPORT)
-  //
-  //// ----------------------------------------------------------------------------
-  //// Formats a char16_t string
-  //// ---------------------------------------------------------------------------
-  //template <typename... Args> constexpr
-  //U16StringSpan format_to(U16StringSpan str, U16StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, fmt, args...);
-  //}
-  //
-  //template <typename... Args> constexpr
-  //char16_t* format_to(char16_t* str, const std::ptrdiff_t str_count, U16StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, str_count, fmt, args...);
-  //}
-  //
-  //// ----------------------------------------------------------------------------
-  //// Formats a char32_t string
-  //// ---------------------------------------------------------------------------
-  //template <typename... Args> constexpr
-  //U32StringSpan format_to(U32StringSpan str, U32StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, fmt, args...);
-  //}
-  //
-  //template <typename... Args> constexpr
-  //char32_t* format_to(char32_t* str, const std::ptrdiff_t str_count, U32StringView fmt, Args&&... args)
-  //{
-  //    return basic_format_to(str, str_count, fmt, args...);
-  //}
-  //
-  //// ----------------------------------------------------------------------------
-  //// Formats a byte string as char string
-  //// ----------------------------------------------------------------------------
-  //template <typename... Args> constexpr
-  //ByteStringSpan format_to(ByteStringSpan str, StringView fmt, Args&&... args)
-  //{
-  //    static_assert(CHAR_BIT == 8, "usf::format_to(): invalid char size.");
-  //    char *end = basic_format_to(reinterpret_cast<char*>(str.data()), str.size(), fmt, args...);
-  //
-  //    return ByteStringSpan(str.begin(), reinterpret_cast<uint8_t*>(end));
-  //}
-  //
-  //template <typename... Args> constexpr
-  //uint8_t* format_to(uint8_t* str, const std::ptrdiff_t str_count, StringView fmt, Args&&... args)
-  //{
-  //    static_assert(CHAR_BIT == 8, "usf::format_to(): invalid char size.");
-  //    return reinterpret_cast<uint8_t*>(basic_format_to(reinterpret_cast<char*>(str), str_count, fmt, args...));
-  //}
+  template <typename... Args>
+  constexpr uint8_t *format_to(uint8_t *str, const std::ptrdiff_t str_count, std::string_view fmt, Args &&...args) {
+    static_assert(CHAR_BIT == 8, "usf::format_to(): invalid char size.");
+    return reinterpret_cast<uint8_t *>(basic_format_to(reinterpret_cast<char *>(str), str_count, fmt, args...));
+  }
 
 }  // namespace usf
 
