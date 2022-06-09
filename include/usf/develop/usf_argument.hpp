@@ -222,13 +222,13 @@ namespace usf {
 
         if (std::isnan(value)) {
 //          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
-          format_string(it, end, format, locale.numbers.symbols.nan.data(), locale.numbers.symbols.nan.length());
+          format_string(it, end, format, locale.numbers.symbols.nan.data(), static_cast<int>(locale.numbers.symbols.nan.length()));
         } else {
           const bool negative = std::signbit(value);
 
           if (std::isinf(value)) {
 //            format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
-            format_string(it, end, format, locale.numbers.symbols.infinity.data(), locale.numbers.symbols.infinity.length(), negative);
+            format_string(it, end, format, locale.numbers.symbols.infinity.data(), static_cast<int>(locale.numbers.symbols.infinity.length()), negative);
           } else {
             if (negative) { value = -value; }
 

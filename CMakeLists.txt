@@ -13,5 +13,3 @@ add_compile_definitions(USF_ENABLE_LANG_EN
         USF_ENABLE_TERR_JP)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/test)
-
-add_subdirectory(test)
