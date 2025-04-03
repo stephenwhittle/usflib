@@ -9,11 +9,15 @@
 
 #include <algorithm>
 #include <array>
+#ifndef USF_CUSTOM_ASSERT_FAILURE_HANDLER
 #include <cassert>
+#endif
 #include <climits>
 #include <cmath>
 #include <limits>
+#ifdef USF_THROW_ON_CONTRACT_VIOLATION
 #include <stdexcept>
+#endif
 #include <string>
 #include <type_traits>
 
@@ -177,7 +181,11 @@ int __builtin_clzll(uint64_t value)
     return _BitScanReverse64(&leading_zero, value) ? static_cast<int>(63 - leading_zero) : 64;
 }
 #endif // defined(USF_COMPILER_MSVC)
-
+void halt()
+{
+	volatile bool bloop = true;
+	while (bloop) {};
+}
 
 // ----------------------------------------------------------------------------
 // Error handling
@@ -213,5 +221,11 @@ void throw_exception(const char* const msg)
 #endif
 
 #define USF_ENFORCE(cond, except)  ((!!(cond)) ? static_cast<void>(0) : USF_CONTRACT_VIOLATION(except))
+
+#ifdef USF_CUSTOM_ASSERT_FAILURE_HANDLER
+	#define USF_ASSERT(cond) ((!!(cond)) ? static_cast<void>(0) : USF_CUSTOM_ASSERT_FAILURE_HANDLER(cond))
+#else
+#define USF_ASSERT(cond) assert(cond)
+#endif
 
 #endif // USF_CONFIG_HPP

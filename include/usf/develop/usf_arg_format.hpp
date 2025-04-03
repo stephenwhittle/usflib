@@ -434,7 +434,7 @@ class ArgFormat
         static USF_CPP14_CONSTEXPR
         uint8_t parse_positive_small_int(const_iterator& it, const int max_value)
         {
-            assert(max_value < 256);
+            USF_ASSERT(max_value < 256);
 
             int value = 0;
 

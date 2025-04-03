@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------------------
 // @file    usf.hpp
 // @brief   usflib single header auto generated file.
-// @date    14 January 2019
+// @date    03 March 2025
 // ----------------------------------------------------------------------------
 //
-// μSF - Micro String Format v0.2.0 - https://github.com/hparracho/usflib
-// Copyright (c) 2019 Helder Parracho (hparracho@gmail.com)
+// μSF - Micro String Format  - https://github.com/hparracho/usflib
+// Copyright (c) 2025 Helder Parracho (hparracho@gmail.com)
 //
 // See README.md file for additional credits and acknowledgments.
 //
@@ -45,11 +45,15 @@
 
 #include <algorithm>
 #include <array>
+#ifndef USF_CUSTOM_ASSERT_FAILURE_HANDLER
 #include <cassert>
+#endif
 #include <climits>
 #include <cmath>
 #include <limits>
+#ifdef USF_THROW_ON_CONTRACT_VIOLATION
 #include <stdexcept>
+#endif
 #include <string>
 #include <type_traits>
 
@@ -213,7 +217,11 @@ int __builtin_clzll(uint64_t value)
     return _BitScanReverse64(&leading_zero, value) ? static_cast<int>(63 - leading_zero) : 64;
 }
 #endif // defined(USF_COMPILER_MSVC)
-
+void halt()
+{
+	volatile bool bloop = true;
+	while (bloop) {};
+}
 
 // ----------------------------------------------------------------------------
 // Error handling
@@ -249,6 +257,12 @@ void throw_exception(const char* const msg)
 #endif
 
 #define USF_ENFORCE(cond, except)  ((!!(cond)) ? static_cast<void>(0) : USF_CONTRACT_VIOLATION(except))
+
+#ifdef USF_CUSTOM_ASSERT_FAILURE_HANDLER
+	#define USF_ASSERT(cond) ((!!(cond)) ? static_cast<void>(0) : USF_CUSTOM_ASSERT_FAILURE_HANDLER(cond))
+#else
+#define USF_ASSERT(cond) assert(cond)
+#endif
 
 #endif // USF_CONFIG_HPP
 
@@ -428,12 +442,12 @@ class BasicStringSpan
         inline USF_CPP14_CONSTEXPR       reference operator [] (const size_type pos)       noexcept { return m_begin[pos]; }
 
         // Returns reference to the first character of the sequence.
-        inline USF_CPP14_CONSTEXPR const_reference front() const noexcept { assert(!empty()); return m_begin[0]; }
-        inline USF_CPP14_CONSTEXPR       reference front()       noexcept { assert(!empty()); return m_begin[0]; }
+        inline USF_CPP14_CONSTEXPR const_reference front() const noexcept { USF_ASSERT(!empty()); return m_begin[0]; }
+        inline USF_CPP14_CONSTEXPR       reference front()       noexcept { USF_ASSERT(!empty()); return m_begin[0]; }
 
         // Returns reference to the last character of the sequence.
-        inline USF_CPP14_CONSTEXPR const_reference back() const noexcept { assert(!empty()); return *(m_end - 1); }
-        inline USF_CPP14_CONSTEXPR       reference back()       noexcept { assert(!empty()); return *(m_end - 1); }
+        inline USF_CPP14_CONSTEXPR const_reference back() const noexcept { USF_ASSERT(!empty()); return *(m_end - 1); }
+        inline USF_CPP14_CONSTEXPR       reference back()       noexcept { USF_ASSERT(!empty()); return *(m_end - 1); }
 
         // Returns a pointer to the beginning of the sequence.
         inline USF_CPP14_CONSTEXPR const_pointer data() const noexcept { return m_begin; }
@@ -609,10 +623,10 @@ class BasicStringView
         inline USF_CPP14_CONSTEXPR const_reference operator [] (const size_type pos) const noexcept { return m_begin[pos]; }
 
         // Returns reference to the first character of the sequence.
-        inline USF_CPP14_CONSTEXPR const_reference front() const noexcept { assert(!empty()); return m_begin[0]; }
+        inline USF_CPP14_CONSTEXPR const_reference front() const noexcept { USF_ASSERT(!empty()); return m_begin[0]; }
 
         // Returns reference to the last character of the sequence.
-        inline USF_CPP14_CONSTEXPR const_reference back() const noexcept { assert(!empty()); return *(m_end - 1); }
+        inline USF_CPP14_CONSTEXPR const_reference back() const noexcept { USF_ASSERT(!empty()); return *(m_end - 1); }
 
         // Returns a pointer to the beginning of the sequence.
         inline USF_CPP14_CONSTEXPR const_pointer data() const noexcept { return m_begin; }
@@ -753,14 +767,14 @@ class Integer
         // -------- POWERS OF 10 ----------------------------------------------
         static USF_CPP14_CONSTEXPR uint32_t pow10_uint32(const int index) noexcept
         {
-            assert(index >= 0 && index < 10);
+            USF_ASSERT(index >= 0 && index < 10);
 
             return pow10_uint32_lut[index];
         }
 
         static USF_CPP14_CONSTEXPR uint64_t pow10_uint64(const int index) noexcept
         {
-            assert(index >= 0 && index < 20);
+            USF_ASSERT(index >= 0 && index < 20);
 
             return pow10_uint64_lut[index];
         }
@@ -1663,7 +1677,7 @@ class ArgFormat
         static USF_CPP14_CONSTEXPR
         uint8_t parse_positive_small_int(const_iterator& it, const int max_value)
         {
-            assert(max_value < 256);
+            USF_ASSERT(max_value < 256);
 
             int value = 0;
 
@@ -2183,7 +2197,7 @@ class Argument
 
             // No point in making a proper integer to string
             // conversion for exponent since we only support [e-19; e19].
-            assert(exponent <= 19);
+            USF_ASSERT(exponent <= 19);
 
             if(exponent < 10)
             {

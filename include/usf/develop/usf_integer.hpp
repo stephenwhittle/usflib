@@ -64,14 +64,14 @@ class Integer
         // -------- POWERS OF 10 ----------------------------------------------
         static USF_CPP14_CONSTEXPR uint32_t pow10_uint32(const int index) noexcept
         {
-            assert(index >= 0 && index < 10);
+            USF_ASSERT(index >= 0 && index < 10);
 
             return pow10_uint32_lut[index];
         }
 
         static USF_CPP14_CONSTEXPR uint64_t pow10_uint64(const int index) noexcept
         {
-            assert(index >= 0 && index < 20);
+            USF_ASSERT(index >= 0 && index < 20);
 
             return pow10_uint64_lut[index];
         }

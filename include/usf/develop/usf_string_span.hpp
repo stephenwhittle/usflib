@@ -102,12 +102,12 @@ class BasicStringSpan
         inline USF_CPP14_CONSTEXPR       reference operator [] (const size_type pos)       noexcept { return m_begin[pos]; }
 
         // Returns reference to the first character of the sequence.
-        inline USF_CPP14_CONSTEXPR const_reference front() const noexcept { assert(!empty()); return m_begin[0]; }
-        inline USF_CPP14_CONSTEXPR       reference front()       noexcept { assert(!empty()); return m_begin[0]; }
+        inline USF_CPP14_CONSTEXPR const_reference front() const noexcept { USF_ASSERT(!empty()); return m_begin[0]; }
+        inline USF_CPP14_CONSTEXPR       reference front()       noexcept { USF_ASSERT(!empty()); return m_begin[0]; }
 
         // Returns reference to the last character of the sequence.
-        inline USF_CPP14_CONSTEXPR const_reference back() const noexcept { assert(!empty()); return *(m_end - 1); }
-        inline USF_CPP14_CONSTEXPR       reference back()       noexcept { assert(!empty()); return *(m_end - 1); }
+        inline USF_CPP14_CONSTEXPR const_reference back() const noexcept { USF_ASSERT(!empty()); return *(m_end - 1); }
+        inline USF_CPP14_CONSTEXPR       reference back()       noexcept { USF_ASSERT(!empty()); return *(m_end - 1); }
 
         // Returns a pointer to the beginning of the sequence.
         inline USF_CPP14_CONSTEXPR const_pointer data() const noexcept { return m_begin; }

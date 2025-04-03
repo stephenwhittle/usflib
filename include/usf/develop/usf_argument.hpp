@@ -402,7 +402,7 @@ class Argument
 
             // No point in making a proper integer to string
             // conversion for exponent since we only support [e-19; e19].
-            assert(exponent <= 19);
+            USF_ASSERT(exponent <= 19);
 
             if(exponent < 10)
             {
