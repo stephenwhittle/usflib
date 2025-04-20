@@ -42,10 +42,15 @@ namespace usf {
                                                                         //    str.remove_prefix();
       fmt.remove_prefix(static_cast<uint32_t>(fmt_it - fmt.cbegin()));  // TODO: Sign conversion error
     }
-
+#if defined(USF_DISABLE_LOCALE_SUPPORT)
+    template <typename CharT>
+    constexpr void process(std::span<CharT> &str, std::basic_string_view<CharT> &fmt,
+                           const Argument<CharT> *const args, const int arg_count) {
+#else
     template <typename CharT>
     constexpr void process(std::span<CharT> &str, std::basic_string_view<CharT> &fmt,
                            const Argument<CharT> *const args, const int arg_count, locale_t locale = c_locale) {
+#endif
       // Argument's sequential index
       int arg_seq_index = 0;
 
@@ -61,9 +66,11 @@ namespace usf {
           USF_ENFORCE(arg_seq_index < arg_count, std::runtime_error);
           arg_index = arg_seq_index++;  // Assign it the next index
         }
-
+#if defined(USF_DISABLE_LOCALE_SUPPORT)
+        args[arg_index].format(str, format);
+#else
         args[arg_index].format(str, format, locale);
-
+#endif
         parse_format_string(str, fmt);
       }
     }
@@ -169,11 +176,17 @@ namespace usf {
 //  constexpr std::span<char8_t> format_to(std::span<char8_t> str, std::u8string_view fmt, Args &&...args) {
 //    return basic_format_to(str, fmt, args...);
 //  }
-
+#if defined (USF_DISABLE_LOCALE_SUPPORT)
+  template <typename... Args>
+  constexpr std::span<char8_t> format_to(std::span<char8_t> str, std::u8string_view fmt, Args &&...args) {
+    return basic_format_to(str, fmt, args...);
+  }
+#else
   template <typename... Args>
   constexpr std::span<char8_t> format_to(std::span<char8_t> str, locale_t locale, std::u8string_view fmt, Args &&...args) {
     return basic_format_to(str, locale, fmt, args...);
   }
+#endif
 
   template <typename... Args>
   constexpr char8_t *format_to(char8_t *str, const std::ptrdiff_t str_count, char8_t fmt, Args &&...args) {

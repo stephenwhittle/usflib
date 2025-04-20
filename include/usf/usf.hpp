@@ -3,11 +3,11 @@
 // ----------------------------------------------------------------------------
 // @file    usf.hpp
 // @brief   usflib single header auto generated file.
-// @date    07 June 2022
+// @date    20 April 2025
 // ----------------------------------------------------------------------------
 //
 // μSF - Micro String Format  - https://github.com/hparracho/usflib
-// Copyright (c) 2022 Helder Parracho (hparracho@gmail.com)
+// Copyright (c) 2025 Helder Parracho (hparracho@gmail.com)
 //
 // See README.md file for additional credits and acknowledgments.
 //
@@ -363,26 +363,10 @@ namespace usf {
       .identity = {
           .revision = 41,
           .language = Languages::en,
-          .territory = Territories::US
-      },
-    .numbers = {
-      .symbols = {
-          .decimal = u8"."sv,
-          .group = u8","sv,
-          .list = u8";"sv,
-          .percent_sign = u8"%"sv,
-          .plus_sign = u8"+"sv,
-          .minus_sign = u8"-"sv,
-          .exponential = u8"E"sv,
-          .superscripting_exponent = u8"×"sv,
-          .per_mille = u8"‰"sv,
-          .infinity = u8"∞"sv,
-          .nan = u8"NaN"sv,
-          .time_separator = u8":"sv}
-    }
-};
+          .territory = Territories::US},
+      .numbers = {.symbols = {.decimal = u8"."sv, .group = u8","sv, .list = u8";"sv, .percent_sign = u8"%"sv, .plus_sign = u8"+"sv, .minus_sign = u8"-"sv, .exponential = u8"E"sv, .superscripting_exponent = u8"×"sv, .per_mille = u8"‰"sv, .infinity = u8"∞"sv, .nan = u8"NaN"sv, .time_separator = u8":"sv}}};
 
-using locale_t = Locale;
+  using locale_t = Locale;
 }  // namespace usf
 
 #endif
@@ -1511,7 +1495,11 @@ namespace usf {
        * @param dst The string where the formatted data will be written.
        * @param format The object which contains all the format data.
        */
+#if defined(USF_DISABLE_LOCALE_SUPPORT)
+      constexpr void format(std::span<CharT> &dst, Format &format) const {  // std_locale is a locale which defaults to then en_US locale style, this can be customized in the usf_locale file
+#else
       constexpr void format(std::span<CharT> &dst, Format &format, locale_t locale = c_locale) const { // std_locale is a locale which defaults to then en_US locale style, this can be customized in the usf_locale file
+#endif
         iterator it = dst.begin().base();
 
         switch (m_type_id) {  // Format it according to its type
@@ -1544,9 +1532,11 @@ namespace usf {
           case TypeId::kString:
             format_string(it, dst.end().base(), format, m_string);
             break;
+#if !defined(USF_DISABLE_LOCALE_SUPPORT)
           case TypeId::kTranslatableString:
             format_string(it, dst.end().base(), format, *(m_translatable_string.begin() + static_cast<uint16_t>(locale.identity.language)));
             break;
+#endif
           case TypeId::kCustom:
             USF_ENFORCE(format.is_empty(), std::runtime_error);
             it = m_custom(dst).end().base();
@@ -1663,13 +1653,13 @@ namespace usf {
 
         if (std::isnan(value)) {
 //          format_string(it, end, format, format.uppercase() ? "NAN" : "nan", 3);
-          format_string(it, end, format, locale.numbers.symbols.nan.data(), locale.numbers.symbols.nan.length());
+          format_string(it, end, format, locale.numbers.symbols.nan.data(), static_cast<int>(locale.numbers.symbols.nan.length()));
         } else {
           const bool negative = std::signbit(value);
 
           if (std::isinf(value)) {
 //            format_string(it, end, format, format.uppercase() ? "INF" : "inf", 3, negative);
-            format_string(it, end, format, locale.numbers.symbols.infinity.data(), locale.numbers.symbols.infinity.length(), negative);
+            format_string(it, end, format, locale.numbers.symbols.infinity.data(), static_cast<int>(locale.numbers.symbols.infinity.length()), negative);
           } else {
             if (negative) { value = -value; }
 
@@ -2155,10 +2145,15 @@ namespace usf {
                                                                         //    str.remove_prefix();
       fmt.remove_prefix(static_cast<uint32_t>(fmt_it - fmt.cbegin()));  // TODO: Sign conversion error
     }
-
+#if defined(USF_DISABLE_LOCALE_SUPPORT)
+    template <typename CharT>
+    constexpr void process(std::span<CharT> &str, std::basic_string_view<CharT> &fmt,
+                           const Argument<CharT> *const args, const int arg_count) {
+#else
     template <typename CharT>
     constexpr void process(std::span<CharT> &str, std::basic_string_view<CharT> &fmt,
                            const Argument<CharT> *const args, const int arg_count, locale_t locale = c_locale) {
+#endif
       // Argument's sequential index
       int arg_seq_index = 0;
 
@@ -2174,9 +2169,11 @@ namespace usf {
           USF_ENFORCE(arg_seq_index < arg_count, std::runtime_error);
           arg_index = arg_seq_index++;  // Assign it the next index
         }
-
+#if defined(USF_DISABLE_LOCALE_SUPPORT)
+        args[arg_index].format(str, format);
+#else
         args[arg_index].format(str, format, locale);
-
+#endif
         parse_format_string(str, fmt);
       }
     }
@@ -2282,11 +2279,17 @@ namespace usf {
 //  constexpr std::span<char8_t> format_to(std::span<char8_t> str, std::u8string_view fmt, Args &&...args) {
 //    return basic_format_to(str, fmt, args...);
 //  }
-
+#if defined (USF_DISABLE_LOCALE_SUPPORT)
+  template <typename... Args>
+  constexpr std::span<char8_t> format_to(std::span<char8_t> str, std::u8string_view fmt, Args &&...args) {
+    return basic_format_to(str, fmt, args...);
+  }
+#else
   template <typename... Args>
   constexpr std::span<char8_t> format_to(std::span<char8_t> str, locale_t locale, std::u8string_view fmt, Args &&...args) {
     return basic_format_to(str, locale, fmt, args...);
   }
+#endif
 
   template <typename... Args>
   constexpr char8_t *format_to(char8_t *str, const std::ptrdiff_t str_count, char8_t fmt, Args &&...args) {
